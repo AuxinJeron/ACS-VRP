@@ -2,12 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="880e6e19-ff2e-4763-a4ad-685950a9d731" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/ant_colony/Ant.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/ant_colony/AntColony.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/ant_colony/AntGraph.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/ant_colony/__init__.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/vrpmain.py" afterPath="$PROJECT_DIR$/src/vrpmain.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/ant_colony/AntColony.py" afterPath="$PROJECT_DIR$/src/ant_colony/AntColony.py" />
     </list>
     <ignored path="Ant_Colony_VRP.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -70,7 +65,7 @@
       <file leaf-file-name="Ant.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/ant_colony/Ant.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
+            <state relative-caret-position="136">
               <caret line="91" column="36" selection-start-line="91" selection-start-column="12" selection-end-line="91" selection-end-column="36" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
@@ -82,8 +77,8 @@
       <file leaf-file-name="AntColony.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/ant_colony/AntColony.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="466">
-              <caret line="67" column="31" selection-start-line="67" selection-start-column="31" selection-end-line="67" selection-end-column="31" />
+            <state relative-caret-position="495">
+              <caret line="33" column="38" selection-start-line="33" selection-start-column="38" selection-end-line="33" selection-end-column="38" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
               </folding>
@@ -682,9 +677,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file:///Library/Frameworks/Python.framework/Versions/3.5/lib/python3.5/threading.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="204">
+          <caret line="308" column="28" selection-start-line="308" selection-start-column="28" selection-end-line="308" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/ant_colony/Ant.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
+        <state relative-caret-position="136">
           <caret line="91" column="36" selection-start-line="91" selection-start-column="12" selection-end-line="91" selection-end-column="36" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
@@ -694,8 +697,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/ant_colony/AntColony.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="466">
-          <caret line="67" column="31" selection-start-line="67" selection-start-column="31" selection-end-line="67" selection-end-column="31" />
+        <state relative-caret-position="495">
+          <caret line="33" column="38" selection-start-line="33" selection-start-column="38" selection-end-line="33" selection-end-column="38" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
           </folding>

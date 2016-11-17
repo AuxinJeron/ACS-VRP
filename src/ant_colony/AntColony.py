@@ -8,8 +8,7 @@ class AntColony:
     def __init__(self, graph, num_ants, num_iterations):
         self.graph = graph
         self.num_ants = num_ants
-        self.num_iterations =
-        self.lock = Lock()
+        self.num_iterations = num_iterations
 
         # condition var
         self.cv = Condition()
@@ -27,7 +26,12 @@ class AntColony:
 
         while self.iter_count < self.num_iterations:
             self.iteration()
-
+            # wait until all ants finishing their jobs
+            with self.cv:
+                self.cv.wait_for(self.finish_ant_count == len(self.ants))
+                self.avg_path_cost /= len(self.ants)
+                print("Best path found in iteration {} is {}, cost {}".format(self.iter_count, self.best_path_vec,
+                                                                                  self.best_path_vec))
 
     def end(self):
         return self.iter_count == self.num_iterations
@@ -40,7 +44,7 @@ class AntColony:
 
     def iteration(self):
         self.avg_path_cost = 0
-        self.ant_count = 0
+        self.finish_ant_count = 0
         self.iter_count += 1
         print("======================================")
         print("iter_count = " + str(self.iter_count))
@@ -49,28 +53,19 @@ class AntColony:
             self.ants[i].start()
 
     def update(self, ant):
-        # TODO: there are may be problem of lock
-        self.lock.acquire()
+        with self.cv:
+            self.finish_ant_count += 1
+            self.avg_path_cost += ant.path_cost
 
-        self.ant_count += 1
-        self.avg_path_cost += ant.path_cost
+            if ant.path_cost < self.best_path_cost:
+                self.best_path_cost = ant.path_cost
+                self.best_path_vec = ant.path_vec
+                self.last_best_path_iteration = self.iter_count
 
-        if ant.path_cost < self.best_path_cost:
-            self.best_path_cost = ant.path_cost
-            self.best_path_vec = ant.path_vec
-            self.last_best_path_iteration = self.iter_count
+            # release the lock
+            self.cv.notify()
 
-        if self.ant_count == len(self.ants):
-            self.avg_path_cost /= len(self.ants)
-            print("Best path found in iteration {} is {}, cost {}".format(self.iter_count, self.best_path_vec, self.best_path_vec))
-            # notify update global
-            with self.cv:
-                self.cv.notify()
-
-        self.lock.release()
-
-
-
-
+    def global_updating_rule(self):
+        evaporation = 0
 
 
