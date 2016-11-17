@@ -16,6 +16,7 @@ class Ant(Thread):
         self.path_vec = []
         self.path_vec.append(self.start_node)
         self.path_cost = 0
+        self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
 
         self.Beta = 1.0
         self.Q0 = 0.5
@@ -27,10 +28,6 @@ class Ant(Thread):
             if i != self.start_node:
                 self.nodes_to_visit[i] = i
 
-        self.path_mat = []
-        for i in range(0, self.graph.nodes_num):
-            self.path_mat.append([0] * self.graph.nodes_num)
-
     def run(self):
         graph = self.colony.graph
         while not self.end():
@@ -39,11 +36,12 @@ class Ant(Thread):
             self.path_cost += graph.delta(self.curr_node, new_node)
 
             self.path_vec.append(new_node)
+            self.path_mat[self.curr_node][new_node] = 1
             # current state of ant
             print('Ant {} : {}, {}'.format(str(self.id), self.path_vec, self.path_cost))
             self.local_updating_rule(self.curr_node, new_node)
             graph.lock.release()
-        self.path_cost = graph.delta(self.path_vec[-1], self.path_vec[0])
+        self.path_cost += graph.delta(self.path_vec[-1], self.path_vec[0])
 
         self.colony.update(self)
 

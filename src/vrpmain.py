@@ -1,10 +1,13 @@
 from src.util import tspparser
 from src.util import argparser
 from src.ant_colony.AntGraph import AntGraph
+from src.ant_colony.AntColony import AntColony
 
 
 def run_ant_colony(nodes_coord):
     antGraph = AntGraph(nodes_coord)
+    antColony = AntColony(antGraph, 10, 10)
+    antColony.start()
 
 def main():
     args = argparser.parse_args()
