@@ -73,7 +73,7 @@ class AntColony:
                 self.best_path_vec = ant.path_vec
                 self.best_path_mat = ant.path_mat
                 self.last_best_path_iteration = self.iter_count
-
+                
             # release the lock
             self.cv.notify()
 

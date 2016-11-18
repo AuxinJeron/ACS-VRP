@@ -14,7 +14,7 @@ logger.addHandler(consoleHandler)
 
 def run_ant_colony(nodes_coord):
     antGraph = AntGraph(nodes_coord)
-    antColony = AntColony(antGraph, 28, 200)
+    antColony = AntColony(antGraph, 28, 1250)
     antColony.start()
 
     best_path_vec = antColony.best_path_vec

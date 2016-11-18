@@ -50,15 +50,16 @@ class AntGraph:
                     continue
                 dict[j] = self.nodes_mat[i][j]
             nearest_neighbours = sorted(dict.items(), key=itemgetter(1))
-            cands = set([])
+            cands = set()
             for neighbour in nearest_neighbours:
-                if len(cands) > self.cl and neighbour[0] != i:
+                if len(cands) > self.cl:
                     break
-                cands |= {(neighbour[0])}
+                if neighbour[0] != i:
+                    cands.add(neighbour[0])
             self.cand_list.append(cands)
 
         for i in range(0, len(self.cand_list)):
-            logger.debug(self.cand_list[i])
+            logger.info(self.cand_list[i])
 
     def reset_tau(self):
         self.build_tau_mat()

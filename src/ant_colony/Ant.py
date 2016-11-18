@@ -27,11 +27,11 @@ class Ant(Thread):
         self.Q0 = random.randint(40, 90) / 100.0
         self.Rho = 0.1
 
-        self.nodes_to_visit = {}
+        self.nodes_to_visit = set()
 
         for i in range(0, self.graph.nodes_num):
             if i != self.start_node:
-                self.nodes_to_visit[i] = i
+                self.nodes_to_visit.add(i)
 
     def reset(self):
         self.curr_node = self.start_node
@@ -40,11 +40,11 @@ class Ant(Thread):
         self.path_vec.append(self.start_node)
         self.path_cost = 0
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
-        self.nodes_to_visit = {}
+        self.nodes_to_visit = set()
 
         for i in range(0, self.graph.nodes_num):
             if i != self.start_node:
-                self.nodes_to_visit[i] = i
+                self.nodes_to_visit.add(i)
 
     def kill(self):
         self.dead = True
@@ -112,7 +112,7 @@ class Ant(Thread):
             max_val = -1
             val = None
 
-            for node in self.nodes_to_visit.values():
+            for node in self.nodes_to_visit:
                 if graph.tau(curr_node, node) == 0:
                     raise Exception("tau = 0")
 
@@ -125,7 +125,7 @@ class Ant(Thread):
             sum = 0
             node = -1
 
-            for node in self.nodes_to_visit.values():
+            for node in self.nodes_to_visit:
                 if graph.tau(curr_node, node) == 0:
                     raise Exception("tau = 0")
                 sum += graph.tau(curr_node, node) * pow(graph.etha(curr_node, node), self.Beta)
@@ -142,7 +142,7 @@ class Ant(Thread):
             pre_probability = 0
             r = random.random()
             #logger.info("r " + str(r))
-            for node in self.nodes_to_visit.values():
+            for node in self.nodes_to_visit:
                 probability[node] = graph.tau(curr_node, node) * pow(graph.etha(curr_node, node), self.Beta) / sum
                 pre_probability = pre_probability + probability[node]
                 #logger.info("p " + str(pre_probability))
@@ -156,7 +156,7 @@ class Ant(Thread):
         if max_node < 0:
             raise Exception("max_node < 0")
 
-        del self.nodes_to_visit[max_node]
+        self.nodes_to_visit.remove(max_node)
 
         return max_node
 
