@@ -1,14 +1,19 @@
 from math import sqrt
 from math import pow
 from threading import Lock
+from operator import itemgetter
 import logging
 
 logger = logging.getLogger("logger")
 
+
 class AntGraph:
     def __init__(self, coord_mat, delta_mat=None, tau_mat=None):
         self.lock = Lock()
+
         self.build_nodes_mat(coord_mat)
+
+        self.build_cand_list()
 
         if tau_mat is None:
             self.build_tau_mat()
@@ -34,6 +39,26 @@ class AntGraph:
         #self.tau0 = 1.0
         for i in range(0, self.nodes_num):
             self.tau_mat.append([self.tau0] * self.nodes_num)
+
+    def build_cand_list(self):
+        self.cl = min(20, int(0.3 * self.nodes_num))
+        self.cand_list = []
+        for i in range(0, self.nodes_num):
+            dict = {}
+            for j in range(0, self.nodes_num):
+                if i == j:
+                    continue
+                dict[j] = self.nodes_mat[i][j]
+            nearest_neighbours = sorted(dict.items(), key=itemgetter(1))
+            cands = set([])
+            for neighbour in nearest_neighbours:
+                if len(cands) > self.cl and neighbour[0] != i:
+                    break
+                cands |= {(neighbour[0])}
+            self.cand_list.append(cands)
+
+        for i in range(0, len(self.cand_list)):
+            logger.debug(self.cand_list[i])
 
     def reset_tau(self):
         self.build_tau_mat()
