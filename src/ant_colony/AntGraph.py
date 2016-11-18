@@ -52,7 +52,7 @@ class AntGraph:
             nearest_neighbours = sorted(dict.items(), key=itemgetter(1))
             cands = set()
             for neighbour in nearest_neighbours:
-                if len(cands) > self.cl:
+                if len(cands) >= self.cl:
                     break
                 if neighbour[0] != i:
                     cands.add(neighbour[0])

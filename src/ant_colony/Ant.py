@@ -24,7 +24,7 @@ class Ant(Thread):
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
 
         self.Beta = 2.0
-        self.Q0 = random.randint(40, 90) / 100.0
+        self.Q0 = random.randint(45, 98) / 100.0
         self.Rho = 0.1
 
         self.nodes_to_visit = set()
@@ -89,6 +89,9 @@ class Ant(Thread):
         graph.lock.release()
 
         self.path_cost += graph.delta(self.path_vec[-1], self.path_vec[0])
+        # use 2-opt heuristic to optimize local solution
+        self.opt_heuristic()
+
         logger.debug('Ant {} : {}'.format(str(self.id), self.path_vec))
         logger.debug('cost : {}'.format(self.path_cost))
 
@@ -107,12 +110,17 @@ class Ant(Thread):
         q = random.random()
         max_node = -1
 
+        # search in the candidate list first
+        candidates_nodes = self.graph.cand_list[curr_node].intersection(self.nodes_to_visit)
+        if not candidates_nodes:
+            candidates_nodes = self.nodes_to_visit
+
         if q < self.Q0:
             logger.debug("Exploitation")
             max_val = -1
             val = None
 
-            for node in self.nodes_to_visit:
+            for node in candidates_nodes:
                 if graph.tau(curr_node, node) == 0:
                     raise Exception("tau = 0")
 
@@ -125,14 +133,14 @@ class Ant(Thread):
             sum = 0
             node = -1
 
-            for node in self.nodes_to_visit:
+            for node in candidates_nodes:
                 if graph.tau(curr_node, node) == 0:
                     raise Exception("tau = 0")
                 sum += graph.tau(curr_node, node) * pow(graph.etha(curr_node, node), self.Beta)
             if sum == 0:
                 raise Exception("sum = 0")
 
-            avg = sum / len(self.nodes_to_visit)
+            avg = sum / len(candidates_nodes)
 
             #print("avg = " + str(avg))
 
@@ -142,7 +150,7 @@ class Ant(Thread):
             pre_probability = 0
             r = random.random()
             #logger.info("r " + str(r))
-            for node in self.nodes_to_visit:
+            for node in candidates_nodes:
                 probability[node] = graph.tau(curr_node, node) * pow(graph.etha(curr_node, node), self.Beta) / sum
                 pre_probability = pre_probability + probability[node]
                 #logger.info("p " + str(pre_probability))
@@ -159,6 +167,46 @@ class Ant(Thread):
         self.nodes_to_visit.remove(max_node)
 
         return max_node
+
+    def update_best_path(self, path_vec, nodes_mat):
+        sum = 0
+        for i in range(0, len(path_vec) - 1):
+            sum += nodes_mat[path_vec[i]][path_vec[i + 1]]
+        sum += nodes_mat[path_vec[len(path_vec) - 1]][path_vec[0]]
+
+    def tour_length(self, path_vec, nodes_mat):
+        sum = 0
+        for i in range(0, len(path_vec) - 1):
+            sum += nodes_mat[path_vec[i]][path_vec[i + 1]]
+        sum += nodes_mat[path_vec[len(path_vec) - 1]][path_vec[0]]
+        return sum
+
+    # 2-opt heuristic
+    def opt_heuristic(self):
+        graph = self.graph
+        path_vec = self.path_vec[:]
+        l = len(path_vec)
+        noChange = False
+        while not noChange:
+            noChange = True
+            for i in range(0, l - 1):
+                for j in range(i + 1, l):
+                    ori_val = graph.delta(path_vec[i], path_vec[i + 1]) + graph.delta(path_vec[j], path_vec[(j + 1) % l])
+                    new_val = graph.delta(path_vec[i], path_vec[j]) + graph.delta(path_vec[i + 1], path_vec[(j + 1) % l])
+                    if new_val < ori_val:
+                        new_path_vec = path_vec[0:i + 1]
+                        new_path_vec += path_vec[j:i:-1]
+                        new_path_vec += path_vec[j + 1:l]
+                        path_vec = new_path_vec
+                        noChange = False
+                        break
+        # update optimization path
+        self.path_vec = path_vec
+        self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
+        self.path_cost = 0
+        for i in range(0, len(path_vec) - 1):
+            self.path_cost += graph.delta(path_vec[i], path_vec[i + 1])
+        self.path_cost += graph.delta(path_vec[len(path_vec) - 1], path_vec[0])
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph
