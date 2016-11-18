@@ -1,7 +1,9 @@
 from math import pow
 from threading import *
 import random
-import operator
+import logging
+
+logger = logging.getLogger("logger")
 
 
 class Ant(Thread):
@@ -18,9 +20,9 @@ class Ant(Thread):
         self.path_cost = 0
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
 
-        self.Beta = 1.0
+        self.Beta = 2.0
         self.Q0 = 0.5
-        self.Rho = 0.99
+        self.Rho = 0.1
 
         self.nodes_to_visit = {}
 
@@ -31,22 +33,25 @@ class Ant(Thread):
     def run(self):
         graph = self.colony.graph
         while not self.end():
-            graph.lock.acquire()
             new_node = self.state_transition_rule(self.curr_node)
             self.path_cost += graph.delta(self.curr_node, new_node)
-
             self.path_vec.append(new_node)
             self.path_mat[self.curr_node][new_node] = 1
             # current state of ant
-            print('Ant {} : {}, {}'.format(str(self.id), self.path_vec, self.path_cost))
+            logger.debug('Ant {} : {}'.format(str(self.id), self.path_vec))
+            logger.debug('cost : {}'.format(self.path_cost))
             self.local_updating_rule(self.curr_node, new_node)
-            graph.lock.release()
+            self.curr_node = new_node
+        self.local_updating_rule(self.path_vec[-1], self.path_vec[0])
         self.path_cost += graph.delta(self.path_vec[-1], self.path_vec[0])
+        logger.debug('Ant {} : {}'.format(str(self.id), self.path_vec))
+        logger.debug('cost : {}'.format(self.path_cost))
 
         self.colony.update(self)
 
         # update global colony
-        print('Ant {} terminated'.format(self.id))
+        logger.debug('===========Ant {} terminated==========='.format(self.id))
+
         self.__init__(self.id, self.start_node, self.colony)
 
     def end(self):
@@ -58,7 +63,7 @@ class Ant(Thread):
         max_node = -1
 
         if q < self.Q0:
-            print("Exploitation")
+            logger.debug("Exploitation")
             max_val = -1
             val = None
 
@@ -71,7 +76,7 @@ class Ant(Thread):
                     max_val = val
                     max_node = node
         else:
-            print("Exploration")
+            logger.debug("Exploration")
             sum = 0
             node = -1
 
@@ -84,16 +89,18 @@ class Ant(Thread):
 
             avg = sum / len(self.nodes_to_visit)
 
-            print("avg = " + str(avg))
+            #print("avg = " + str(avg))
 
             # random node selected according to the probability distribution
             # TODO check this method
             probability = {}
             pre_probability = 0
             r = random.random()
+            #logger.info("r " + str(r))
             for node in self.nodes_to_visit.values():
-                probability[node] = graph.tau(curr_node, node) * pow(graph.etha(curr_node, node), self.Beta)
+                probability[node] = graph.tau(curr_node, node) * pow(graph.etha(curr_node, node), self.Beta) / sum
                 pre_probability = pre_probability + probability[node]
+                #logger.info("p " + str(pre_probability))
                 if pre_probability >= r:
                     max_node = node
                     break

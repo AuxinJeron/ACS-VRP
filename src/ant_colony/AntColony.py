@@ -2,7 +2,9 @@ from .Ant import Ant
 from threading import Lock, Condition
 
 import random
+import logging
 
+logger = logging.getLogger("logger")
 
 class AntColony:
     def __init__(self, graph, num_ants, num_iterations):
@@ -33,8 +35,10 @@ class AntColony:
             with self.cv:
                 self.cv.wait_for(self.end)
                 self.avg_path_cost /= len(self.ants)
-                print("Best path found in iteration {} is {}, cost {}".format(self.iter_count, self.best_path_vec,
-                                                                                  self.best_path_vec))
+                logger.info("=================Iteration {} finish=================".format(self.iter_count))
+                logger.info("Best path found in iteration {} is".format(self.iter_count))
+                logger.info("{}".format(self.best_path_vec))
+                logger.info("cost : {}".format(self.best_path_cost))
                 self.global_updating_rule()
 
     def end(self):
@@ -50,11 +54,10 @@ class AntColony:
         self.avg_path_cost = 0
         self.finish_ant_count = 0
         self.iter_count += 1
-        print("======================================")
-        print("iter_count = " + str(self.iter_count))
-        for i in range(0, len(self.ants)):
-            print("Ant {} started".format(i))
-            self.ants[i].start()
+        logger.debug("=================Iteration {} start=================".format(self.iter_count))
+        for ant in self.ants:
+            logger.debug("Ant {} started".format(ant.id))
+            ant.start()
 
     def update(self, ant):
         with self.cv:
@@ -73,6 +76,9 @@ class AntColony:
     def global_updating_rule(self):
         delta = 1.0 / self.best_path_cost
 
+        # for i in range(0, len(self.best_path_mat)):
+        #     logger.info(self.best_path_mat[i])
+
         for r in range(0, self.graph.nodes_num):
             for s in range(0, self.graph.nodes_num):
                 if (r == s):
@@ -83,5 +89,4 @@ class AntColony:
                 evaporation = (1 - self.Alpha) * self.graph.tau(r, s)
                 deposition = self.Alpha * delta_rs
                 self.graph.update_tau(r, s, evaporation + deposition)
-
 
