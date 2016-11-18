@@ -9,9 +9,12 @@ logger = logging.getLogger("logger")
 class Ant(Thread):
     def __init__(self, ID, start_node, colony):
         Thread.__init__(self)
+        self.cv = Condition()
         self.id = ID
         self.start_node = start_node
         self.colony = colony
+        self.dead = False
+        self.working = False
 
         self.curr_node = self.start_node
         self.graph = self.colony.graph
@@ -21,7 +24,7 @@ class Ant(Thread):
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
 
         self.Beta = 2.0
-        self.Q0 = 0.5
+        self.Q0 = random.randint(40, 90) / 100.0
         self.Rho = 0.1
 
         self.nodes_to_visit = {}
@@ -30,9 +33,46 @@ class Ant(Thread):
             if i != self.start_node:
                 self.nodes_to_visit[i] = i
 
+    def reset(self):
+        self.curr_node = self.start_node
+        self.graph = self.colony.graph
+        self.path_vec = []
+        self.path_vec.append(self.start_node)
+        self.path_cost = 0
+        self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
+        self.nodes_to_visit = {}
+
+        for i in range(0, self.graph.nodes_num):
+            if i != self.start_node:
+                self.nodes_to_visit[i] = i
+
+    def kill(self):
+        self.dead = True
+        with self.cv:
+            self.working = True
+            self.cv.notify()
+
     def run(self):
+        while not self.dead:
+            with self.cv:
+                self.cv.wait_for(self.should_work)
+                self.run_iteration()
+                self.working = False
+
+    def begin_colony(self):
+        if self.dead:
+            return
+        with self.cv:
+            self.working = True
+            self.cv.notify()
+
+    def should_work(self):
+        return self.working
+
+    def run_iteration(self):
         graph = self.colony.graph
         while not self.end():
+            graph.lock.acquire()
             new_node = self.state_transition_rule(self.curr_node)
             self.path_cost += graph.delta(self.curr_node, new_node)
             self.path_vec.append(new_node)
@@ -41,8 +81,13 @@ class Ant(Thread):
             logger.debug('Ant {} : {}'.format(str(self.id), self.path_vec))
             logger.debug('cost : {}'.format(self.path_cost))
             self.local_updating_rule(self.curr_node, new_node)
+            graph.lock.release()
             self.curr_node = new_node
+
+        graph.lock.acquire()
         self.local_updating_rule(self.path_vec[-1], self.path_vec[0])
+        graph.lock.release()
+
         self.path_cost += graph.delta(self.path_vec[-1], self.path_vec[0])
         logger.debug('Ant {} : {}'.format(str(self.id), self.path_vec))
         logger.debug('cost : {}'.format(self.path_cost))
@@ -51,8 +96,8 @@ class Ant(Thread):
 
         # update global colony
         logger.debug('===========Ant {} terminated==========='.format(self.id))
-
-        self.__init__(self.id, self.start_node, self.colony)
+        self.reset()
+        #self.__init__(self.id, self.start_node, self.colony)
 
     def end(self):
         return not self.nodes_to_visit

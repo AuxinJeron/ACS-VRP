@@ -45,6 +45,7 @@ class AntGraph:
         start_node = 0
         curr_node = start_node
         path_vec.append(start_node)
+        path_mat = [[0 for i in range(0, self.nodes_num)] for i in range(0, self.nodes_num)]
         for i in range(0, self.nodes_num):
             if i != start_node:
                 nodes_to_visit[i] = i
@@ -59,8 +60,14 @@ class AntGraph:
                     nearest_len = self.nodes_mat[curr_node][node]
             L += nearest_len
             path_vec.append(new_node)
+            path_mat[curr_node][new_node] = '*'
             del nodes_to_visit[new_node]
+            curr_node = new_node
+
+        path_mat[path_vec[-1]][start_node] = '*'
         L += self.nodes_mat[path_vec[-1]][start_node]
+        # for i in range(0, len(path_mat)):
+        #     print(path_mat[i])
         return L
 
     def delta(self, r, s):
@@ -73,13 +80,8 @@ class AntGraph:
         return 1.0 / self.delta(r, s)
 
     def update_tau(self, r, s, val):
-        self.lock.acquire()
         self.tau_mat[r][s] = val
-        self.lock.release()
 
     def print_tau(self):
         for i in range(0, len(self.tau_mat)):
             logger.info(self.tau_mat[i])
-
-
-

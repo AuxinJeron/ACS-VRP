@@ -15,11 +15,10 @@ class AntColony:
 
         # condition var
         self.cv = Condition()
+        self.create_ants()
         self.reset()
 
     def reset(self):
-        self.ants = []
-        self.create_ants()
         self.iter_count = 0
         self.best_path_cost = float('inf')
         self.best_path_vec = None
@@ -41,6 +40,10 @@ class AntColony:
                 logger.info("cost : {}".format(self.best_path_cost))
                 self.global_updating_rule()
 
+        # kill all ants
+        for ant in self.ants:
+            ant.kill()
+
     def end(self):
         return self.finish_ant_count == len(self.ants)
 
@@ -49,6 +52,7 @@ class AntColony:
         for i in range(0, self.num_ants):
             ant = Ant(i, random.randint(0, self.graph.nodes_num - 1), self)
             self.ants.append(ant)
+            ant.start()
 
     def iteration(self):
         self.avg_path_cost = 0
@@ -57,7 +61,7 @@ class AntColony:
         logger.debug("=================Iteration {} start=================".format(self.iter_count))
         for ant in self.ants:
             logger.debug("Ant {} started".format(ant.id))
-            ant.start()
+            ant.begin_colony()
 
     def update(self, ant):
         with self.cv:
@@ -74,6 +78,8 @@ class AntColony:
             self.cv.notify()
 
     def global_updating_rule(self):
+        self.graph.lock.acquire()
+
         delta = 1.0 / self.best_path_cost
 
         # for i in range(0, len(self.best_path_mat)):
@@ -89,4 +95,6 @@ class AntColony:
                 evaporation = (1 - self.Alpha) * self.graph.tau(r, s)
                 deposition = self.Alpha * delta_rs
                 self.graph.update_tau(r, s, evaporation + deposition)
+
+        self.graph.lock.release()
 
