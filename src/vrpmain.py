@@ -41,9 +41,15 @@ def main():
     logger.info("Name: " + tspparser.name)
     logger.info("Comment: " + tspparser.comment)
     logger.info("Type: " + tspparser.type)
-    logger.info("Cities: ")
+    logger.info("Nodes: ")
     for i in range(1, len(tspparser.cities_coord)):
         logger.info("Node " + str(i) + " coordinate is " + str(tspparser.cities_coord[i][0]) + ", " + str(tspparser.cities_coord[i][1]))
+    logger.info("Lockers: ")
+    for i in range(0, len(tspparser.lockers)):
+        logger.info(tspparser.lockers[i])
+    logger.info("Delivers: ")
+    for i in range(0, len(tspparser.delivers)):
+        logger.info(tspparser.delivers[i])
 
     run_ant_colony(tspparser.cities_coord[1:])
 
