@@ -4,8 +4,6 @@
     <list default="true" id="880e6e19-ff2e-4763-a4ad-685950a9d731" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/AntColony.py" afterPath="$PROJECT_DIR$/src/AntColony.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/VRPCenter.py" afterPath="$PROJECT_DIR$/src/VRPCenter.py" />
     </list>
     <ignored path="Ant_Colony_VRP.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -32,7 +30,7 @@
       <file leaf-file-name="AntGraph.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/AntGraph.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="60">
+            <state relative-caret-position="120">
               <caret line="8" column="0" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
@@ -44,7 +42,7 @@
       <file leaf-file-name="TsplibParser.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/TsplibParser.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1560">
+            <state relative-caret-position="1620">
               <caret line="108" column="45" selection-start-line="108" selection-start-column="33" selection-end-line="108" selection-end-column="45" />
               <folding>
                 <element signature="e#0#29#0" expanded="true" />
@@ -66,7 +64,7 @@
       <file leaf-file-name="vrpmain.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/vrpmain.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
+            <state relative-caret-position="225">
               <caret line="15" column="18" selection-start-line="15" selection-start-column="18" selection-end-line="15" selection-end-column="18" />
               <folding>
                 <element signature="e#0#44#0" expanded="true" />
@@ -78,7 +76,7 @@
       <file leaf-file-name="VRPCenter.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/VRPCenter.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="90">
+            <state relative-caret-position="135">
               <caret line="9" column="34" selection-start-line="9" selection-start-column="34" selection-end-line="9" selection-end-column="34" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
@@ -90,8 +88,8 @@
       <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
-              <caret line="25" column="19" selection-start-line="25" selection-start-column="19" selection-end-line="25" selection-end-column="19" />
+            <state relative-caret-position="240">
+              <caret line="25" column="6" selection-start-line="25" selection-start-column="6" selection-end-line="25" selection-end-column="6" />
               <folding />
             </state>
           </provider>
@@ -100,7 +98,7 @@
       <file leaf-file-name="AntColony.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/AntColony.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="735">
+            <state relative-caret-position="795">
               <caret line="53" column="12" selection-start-line="53" selection-start-column="12" selection-end-line="53" selection-end-column="12" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
@@ -112,7 +110,7 @@
       <file leaf-file-name="Ant.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/Ant.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3015">
+            <state relative-caret-position="3060">
               <caret line="204" column="26" selection-start-line="204" selection-start-column="26" selection-end-line="204" selection-end-column="26" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
@@ -261,8 +259,8 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scratches" />
       <pane id="Scope" />
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -537,7 +535,7 @@
     <frame x="0" y="23" width="1440" height="832" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2274678" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.23032904" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.13378379" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -578,6 +576,14 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/src/ArgParser.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" column="5" selection-start-line="11" selection-start-column="5" selection-end-line="11" selection-end-column="5" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/AntGraph.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="60">
@@ -766,7 +772,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/AntGraph.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
+        <state relative-caret-position="120">
           <caret line="8" column="0" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
@@ -776,7 +782,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/TsplibParser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1560">
+        <state relative-caret-position="1620">
           <caret line="108" column="45" selection-start-line="108" selection-start-column="33" selection-end-line="108" selection-end-column="45" />
           <folding>
             <element signature="e#0#29#0" expanded="true" />
@@ -794,7 +800,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/AntColony.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="735">
+        <state relative-caret-position="795">
           <caret line="53" column="12" selection-start-line="53" selection-start-column="12" selection-end-line="53" selection-end-column="12" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
@@ -804,7 +810,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/Ant.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3015">
+        <state relative-caret-position="3060">
           <caret line="204" column="26" selection-start-line="204" selection-start-column="26" selection-end-line="204" selection-end-column="26" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
@@ -814,7 +820,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/vrpmain.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
+        <state relative-caret-position="225">
           <caret line="15" column="18" selection-start-line="15" selection-start-column="18" selection-end-line="15" selection-end-column="18" />
           <folding>
             <element signature="e#0#44#0" expanded="true" />
@@ -824,7 +830,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/VRPCenter.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
+        <state relative-caret-position="135">
           <caret line="9" column="34" selection-start-line="9" selection-start-column="34" selection-end-line="9" selection-end-column="34" />
           <folding>
             <element signature="e#0#31#0" expanded="true" />
@@ -832,10 +838,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/.git/info/exclude">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="25" column="19" selection-start-line="25" selection-start-column="19" selection-end-line="25" selection-end-column="19" />
+        <state relative-caret-position="240">
+          <caret line="25" column="6" selection-start-line="25" selection-start-column="6" selection-end-line="25" selection-end-column="6" />
           <folding />
         </state>
       </provider>
