@@ -1,7 +1,6 @@
 from TsplibParser import parser as tspparser
 from ArgParser import parser as argparser
-from AntGraph import AntGraph
-from AntColony import AntColony
+from VRPCenter import VRPCenter
 import logging
 
 # construct the logger
@@ -12,24 +11,9 @@ consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
 logger.addHandler(consoleHandler)
 
-def run_ant_colony(nodes_coord):
-    antGraph = AntGraph(nodes_coord)
-    antColony = AntColony(antGraph, 28, 250)
-    antColony.start()
-
-    best_path_vec = antColony.best_path_vec
-    best_path_cost = antColony.best_path_cost
-    for i in range(0, len(best_path_vec)):
-        if best_path_vec[i] == 0:
-            best_path_vec = antColony.best_path_vec[i:]
-            best_path_vec += antColony.best_path_vec[0:i]
-            break
-    logger.info("-------------------------------------------")
-    logger.info("Problem optimization result")
-    logger.info("-------------------------------------------")
-    logger.info("Best path found  is")
-    logger.info("{}".format(best_path_vec))
-    logger.info("cost : {}".format(best_path_cost))
+def run(tspparser):
+    center = VRPCenter(tspparser)
+    center.start()
 
 def main():
     args = argparser.parse_args()
@@ -51,7 +35,8 @@ def main():
     for i in range(0, len(tspparser.delivers)):
         logger.info(tspparser.delivers[i])
 
-    run_ant_colony(tspparser.cities_coord[1:])
+    # run vrp center
+    run(tspparser)
 
 if __name__ == "__main__":
     main()

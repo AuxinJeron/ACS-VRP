@@ -87,7 +87,7 @@ class TsplibParser :
         if len(words) != 2:
             return
         locker_id = int(words[0])
-        locker_pos = int(words[1])
+        locker_pos = int(words[1]) - 1
         locker = Locker(locker_id, locker_pos)
         self.lockers.append(locker)
 
@@ -96,7 +96,7 @@ class TsplibParser :
         if len(words) != 4:
             return
         deliver_id = int(words[0])
-        pos = int(words[1])
+        pos = int(words[1]) - 1
         max_distance = int(words[2])
         max_capacity = int(words[3])
         deliver = Deliver(deliver_id, pos, max_distance, max_capacity)
@@ -106,5 +106,6 @@ class TsplibParser :
         self.file_path = path.relpath(file_path)
         file = open(file_path, 'r')
         self.scan_keywords(file)
+        self.cities_coord = self.cities_coord[1:]
 
 parser = TsplibParser()
