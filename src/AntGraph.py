@@ -58,8 +58,8 @@ class AntGraph:
                     cands.add(neighbour[0])
             self.cand_list.append(cands)
 
-        for i in range(0, len(self.cand_list)):
-            logger.info(self.cand_list[i])
+        # for i in range(0, len(self.cand_list)):
+        #     logger.info(self.cand_list[i])
 
     def reset_tau(self):
         self.build_tau_mat()

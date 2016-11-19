@@ -1,4 +1,4 @@
-from .Ant import Ant
+from Ant import Ant
 from threading import Lock, Condition
 
 import random

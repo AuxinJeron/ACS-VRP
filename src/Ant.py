@@ -199,7 +199,6 @@ class Ant(Thread):
                         new_path_vec += path_vec[j + 1:l]
                         path_vec = new_path_vec
                         noChange = False
-                        break
         # update optimization path
         self.path_vec = path_vec
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]

@@ -1,7 +1,7 @@
-from src.util import tspparser
-from src.util import argparser
-from src.ant_colony.AntGraph import AntGraph
-from src.ant_colony.AntColony import AntColony
+from TsplibParser import parser as tspparser
+from ArgParser import parser as argparser
+from AntGraph import AntGraph
+from AntColony import AntColony
 import logging
 
 # construct the logger

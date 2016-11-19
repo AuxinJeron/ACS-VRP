@@ -1,7 +1,10 @@
 from collections import deque
 from os import path
 
-KEYWORDS = {'NAME', 'COMMENT', 'TYPE', 'DIMENSION', 'EDGE_WEIGHT_TYPE', 'CAPACITY', 'NODE_COORD_SECTION', 'DEMAND_SECTION', 'DEPOT_SECTION'}
+KEYWORDS = {'NAME', 'COMMENT', 'TYPE', 'DIMENSION', 'EDGE_WEIGHT_TYPE',
+            'CAPACITY', 'NODE_COORD_SECTION', 'DEMAND_SECTION', 'DEPOT_SECTION',
+            'LOCKER_SECTION', 'DELIVER_SECTION'}
+
 
 class TsplibParser :
     def __init__(self) :
@@ -21,6 +24,7 @@ class TsplibParser :
     def scan_keywords(self, file) :
         # mark whether enter NODE_COORD_SECTION
         node_coord_section = False
+
 
         for line in file :
             words = deque(line.split())
