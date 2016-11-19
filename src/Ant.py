@@ -190,15 +190,21 @@ class Ant(Thread):
         while not noChange:
             noChange = True
             for i in range(0, l - 1):
+                diff = 0
+                diff_j = i
                 for j in range(i + 1, l):
                     ori_val = graph.delta(path_vec[i], path_vec[i + 1]) + graph.delta(path_vec[j], path_vec[(j + 1) % l])
                     new_val = graph.delta(path_vec[i], path_vec[j]) + graph.delta(path_vec[i + 1], path_vec[(j + 1) % l])
-                    if new_val < ori_val:
-                        new_path_vec = path_vec[0:i + 1]
-                        new_path_vec += path_vec[j:i:-1]
-                        new_path_vec += path_vec[j + 1:l]
-                        path_vec = new_path_vec
-                        noChange = False
+                    if new_val - ori_val < diff:
+                        diff = new_val - ori_val
+                        diff_j = j
+                j = diff_j
+                if j != i:
+                    new_path_vec = path_vec[0:i + 1]
+                    new_path_vec += path_vec[j:i:-1]
+                    new_path_vec += path_vec[j + 1:l]
+                    path_vec = new_path_vec
+                    noChange = False
         # update optimization path
         self.path_vec = path_vec
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]

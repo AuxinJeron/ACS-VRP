@@ -14,7 +14,7 @@ class VRPCenter:
         self.antGraph = AntGraph(tspparser.cities_coord)
 
     def start(self):
-        antColony = AntColony(self.antGraph, 28, 250)
+        antColony = AntColony(self.antGraph, 10, 250)
         antColony.start()
 
         best_path_vec = antColony.best_path_vec
