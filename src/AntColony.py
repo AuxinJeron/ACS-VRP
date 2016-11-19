@@ -50,7 +50,8 @@ class AntColony:
     def create_ants(self):
         self.ants = []
         for i in range(0, self.num_ants):
-            ant = Ant(i, random.randint(0, self.graph.nodes_num - 1), self)
+            #ant = Ant(i, random.randint(0, self.graph.nodes_num - 1), self)
+            ant = Ant(i, 0, self)
             self.ants.append(ant)
             ant.start()
 

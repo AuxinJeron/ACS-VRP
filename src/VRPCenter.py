@@ -1,6 +1,5 @@
 from AntColony import AntColony
 from AntGraph import AntGraph
-from TsplibParser import parser as tspparser
 from VRPModel import *
 import logging
 
@@ -9,9 +8,9 @@ logger = logging.getLogger("logger")
 
 class VRPCenter:
     def __init__(self, tspparser):
-        self.build_ant_colony(tspparser)
+        self.build_graph(tspparser)
 
-    def build_ant_colony(self, tspparser):
+    def build_graph(self, tspparser):
         self.antGraph = AntGraph(tspparser.cities_coord)
 
     def start(self):
