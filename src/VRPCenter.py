@@ -12,9 +12,12 @@ class VRPCenter:
 
     def build_graph(self, tspparser):
         self.antGraph = AntGraph(tspparser.cities_coord)
+        self.lockers = tspparser.lockers
+        self.delivers = tspparser.delivers
+        self.demands = tspparser.demands
 
     def start(self):
-        antColony = AntColony(self.antGraph, 10, 250)
+        antColony = AntColony(self.antGraph, self.lockers, self.delivers, self.demands, 10, 250)
         antColony.start()
 
         best_path_vec = antColony.best_path_vec

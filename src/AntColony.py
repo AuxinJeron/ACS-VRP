@@ -7,8 +7,11 @@ import logging
 logger = logging.getLogger("logger")
 
 class AntColony:
-    def __init__(self, graph, num_ants, num_iterations):
+    def __init__(self, graph, lockers, delivers, demands, num_ants, num_iterations):
         self.graph = graph
+        self.lockers = lockers
+        self.delivers = delivers
+        self.demands = demands
         self.num_ants = num_ants
         self.num_iterations = num_iterations
         self.Alpha = 0.1
@@ -51,7 +54,7 @@ class AntColony:
         self.ants = []
         for i in range(0, self.num_ants):
             #ant = Ant(i, random.randint(0, self.graph.nodes_num - 1), self)
-            ant = Ant(i, 0, self)
+            ant = Ant(i, self)
             self.ants.append(ant)
             ant.start()
 
@@ -71,7 +74,7 @@ class AntColony:
 
             if ant.path_cost < self.best_path_cost:
                 self.best_path_cost = ant.path_cost
-                self.best_path_vec = ant.path_vec
+                self.best_path_vec = ant.curr_path_vec
                 self.best_path_mat = ant.path_mat
                 self.last_best_path_iteration = self.iter_count
                 

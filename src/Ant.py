@@ -7,44 +7,38 @@ logger = logging.getLogger("logger")
 
 
 class Ant(Thread):
-    def __init__(self, ID, start_node, colony):
+    def __init__(self, ID, colony):
         Thread.__init__(self)
         self.cv = Condition()
         self.id = ID
-        self.start_node = start_node
+        self.start_node = 0
         self.colony = colony
         self.dead = False
         self.working = False
-
-        self.curr_node = self.start_node
-        self.graph = self.colony.graph
-        self.path_vec = []
-        self.path_vec.append(self.start_node)
-        self.path_cost = 0
-        self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
 
         self.Beta = 2.0
         self.Q0 = random.randint(45, 98) / 100.0
         self.Rho = 0.1
 
-        self.nodes_to_visit = set()
-
-        for i in range(0, self.graph.nodes_num):
-            if i != self.start_node:
-                self.nodes_to_visit.add(i)
+        self.reset()
 
     def reset(self):
         self.curr_node = self.start_node
         self.graph = self.colony.graph
-        self.path_vec = []
-        self.path_vec.append(self.start_node)
+        self.delivers = set(self.colony.delivers)
+        self.demands = self.colony.demands
+        self.current_deliver = None
+
+        self.routes = {}
         self.path_cost = 0
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
         self.nodes_to_visit = set()
-
         for i in range(0, self.graph.nodes_num):
             if i != self.start_node:
                 self.nodes_to_visit.add(i)
+
+        self.curr_path_vec = []
+        self.curr_path_vec.append(self.start_node)
 
     def kill(self):
         self.dead = True
@@ -75,24 +69,24 @@ class Ant(Thread):
             graph.lock.acquire()
             new_node = self.state_transition_rule(self.curr_node)
             self.path_cost += graph.delta(self.curr_node, new_node)
-            self.path_vec.append(new_node)
+            self.curr_path_vec.append(new_node)
             self.path_mat[self.curr_node][new_node] = 1
             # current state of ant
-            logger.debug('Ant {} : {}'.format(str(self.id), self.path_vec))
+            logger.debug('Ant {} : {}'.format(str(self.id), self.curr_path_vec))
             logger.debug('cost : {}'.format(self.path_cost))
             self.local_updating_rule(self.curr_node, new_node)
             graph.lock.release()
             self.curr_node = new_node
 
         graph.lock.acquire()
-        self.local_updating_rule(self.path_vec[-1], self.path_vec[0])
+        self.local_updating_rule(self.curr_path_vec[-1], self.curr_path_vec[0])
         graph.lock.release()
 
-        self.path_cost += graph.delta(self.path_vec[-1], self.path_vec[0])
+        self.path_cost += graph.delta(self.curr_path_vec[-1], self.curr_path_vec[0])
         # use 2-opt heuristic to optimize local solution
         self.opt_heuristic()
 
-        logger.debug('Ant {} : {}'.format(str(self.id), self.path_vec))
+        logger.debug('Ant {} : {}'.format(str(self.id), self.curr_path_vec))
         logger.debug('cost : {}'.format(self.path_cost))
 
         self.colony.update(self)
@@ -184,7 +178,7 @@ class Ant(Thread):
     # 2-opt heuristic
     def opt_heuristic(self):
         graph = self.graph
-        path_vec = self.path_vec[:]
+        path_vec = self.curr_path_vec[:]
         l = len(path_vec)
         noChange = False
         while not noChange:
@@ -206,7 +200,7 @@ class Ant(Thread):
                     path_vec = new_path_vec
                     noChange = False
         # update optimization path
-        self.path_vec = path_vec
+        self.curr_path_vec = path_vec
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
         self.path_cost = 0
         for i in range(0, len(path_vec) - 1):
