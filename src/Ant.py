@@ -5,7 +5,6 @@ import logging
 
 logger = logging.getLogger("logger")
 
-
 class Ant(Thread):
     def __init__(self, ID, colony):
         Thread.__init__(self)
@@ -20,14 +19,13 @@ class Ant(Thread):
         self.Q0 = random.randint(45, 98) / 100.0
         self.Rho = 0.1
 
-        self.reset()
-
     def reset(self):
         self.curr_node = self.start_node
         self.graph = self.colony.graph
         self.delivers = set(self.colony.delivers)
-        self.demands = self.colony.demands
-        self.current_deliver = None
+        # TODO: the demand per node may be larger than the capacity of each deliver
+        self.demands = list(self.colony.demands)
+        self.curr_deliver = None
 
         self.routes = {}
         self.path_cost = 0
@@ -40,6 +38,7 @@ class Ant(Thread):
         self.curr_path_vec = []
         self.curr_path_vec.append(self.start_node)
         self.curr_path_cost = 0
+        self.curr_path_capacity = 0
 
     def kill(self):
         self.dead = True
@@ -50,6 +49,7 @@ class Ant(Thread):
     def run(self):
         while not self.dead:
             with self.cv:
+                self.reset()
                 self.cv.wait_for(self.should_work)
                 self.run_iteration()
                 self.working = False
@@ -69,13 +69,7 @@ class Ant(Thread):
         while not self.end():
             graph.lock.acquire()
             new_node = self.state_transition_rule(self.curr_node)
-            self.curr_path_cost += graph.delta(self.curr_node, new_node)
-            self.curr_path_vec.append(new_node)
-            self.path_mat[self.curr_node][new_node] = 1
-            # current state of ant
-            logger.debug('Ant {} : {}'.format(str(self.id), self.curr_path_vec))
-            logger.debug('cost : {}'.format(self.curr_path_cost))
-            self.local_updating_rule(self.curr_node, new_node)
+            self.insert_node(new_node)
             graph.lock.release()
             self.curr_node = new_node
 
@@ -95,7 +89,6 @@ class Ant(Thread):
 
         # update global colony
         logger.debug('===========Ant {} terminated==========='.format(self.id))
-        self.reset()
         #self.__init__(self.id, self.start_node, self.colony)
 
     def end(self):
@@ -159,10 +152,36 @@ class Ant(Thread):
 
         if max_node < 0:
             raise Exception("max_node < 0")
-
-        self.nodes_to_visit.remove(max_node)
-
         return max_node
+
+    def check_feasibilty(self, next_node):
+        distance = self.graph.delta(self.curr_path_vec[-1], next_node) + self.graph.delta(next_node, self.curr_path_vec[0])
+        if self.curr_path_cost + distance > self.curr_deliver.max_distance:
+            return False
+        next_capacity = self.curr_path_capacity + self.demands[next_node] + self.demands[self.curr_path_vec[-1]]
+        # if the capacity exceeds the max capacity of the deliver return false
+        # expects that the demand in that node is larger than the origin max capacity of the deliver
+        if next_capacity > self.curr_deliver.max_capacity and self.demands[next_node] <= self.curr_deliver.max_capacity:
+            return False
+        return True
+
+    def insert_node(self, new_node):
+        graph = self.graph
+
+        consume_demand = min(self.curr_deliver.max_capacity - self.curr_path_capacity, self.demands[new_node])
+        self.demands[new_node] -= consume_demand
+        if self.demands[new_node] == 0:
+            self.nodes_to_visit.remove(new_node)
+
+        self.curr_path_cost += graph.delta(self.curr_node, new_node)
+        self.curr_path_capacity += consume_demand
+        self.curr_path_vec.append(new_node)
+        self.path_mat[self.curr_node][new_node] = 1
+        # current state of ant
+        logger.debug('Ant {} : {}'.format(str(self.id), self.curr_path_vec))
+        logger.debug('cost : {}'.format(self.curr_path_cost))
+        self.local_updating_rule(self.curr_node, new_node)
+        self.curr_node = new_node
 
     def update_best_path(self, path_vec, nodes_mat):
         sum = 0
