@@ -10,7 +10,6 @@ class Ant(Thread):
         Thread.__init__(self)
         self.cv = Condition()
         self.id = ID
-        self.start_node = 0
         self.colony = colony
         self.dead = False
         self.working = False
@@ -20,23 +19,21 @@ class Ant(Thread):
         self.Rho = 0.1
 
     def reset(self):
-        self.curr_node = self.start_node
         self.graph = self.colony.graph
         self.delivers = set(self.colony.delivers)
         # TODO: the demand per node may be larger than the capacity of each deliver
         self.demands = list(self.colony.demands)
-        self.curr_deliver = None
 
         self.routes = {}
         self.path_cost = 0
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
         self.nodes_to_visit = set()
         for i in range(0, self.graph.nodes_num):
-            if i != self.start_node:
-                self.nodes_to_visit.add(i)
+            self.nodes_to_visit.add(i)
 
+        self.curr_deliver = None
+        self.curr_node = None
         self.curr_path_vec = []
-        self.curr_path_vec.append(self.start_node)
         self.curr_path_cost = 0
         self.curr_path_capacity = 0
 
@@ -66,30 +63,30 @@ class Ant(Thread):
 
     def run_iteration(self):
         graph = self.colony.graph
+        self.find_deliver()
         while not self.end():
             graph.lock.acquire()
             new_node = self.state_transition_rule(self.curr_node)
-            self.insert_node(new_node)
+            if self.check_feasibilty(new_node):
+                self.insert_node(new_node)
+            else:
+                self.find_deliver()
             graph.lock.release()
             self.curr_node = new_node
+        # don't forget the last route
+        self.find_deliver()
 
-        graph.lock.acquire()
-        self.local_updating_rule(self.curr_path_vec[-1], self.curr_path_vec[0])
-        graph.lock.release()
+        # local search update
+        # use 2-opt heuristic
+        for key in self.routes.keys():
+            self.routes[key] = self.opt_heuristic(self.routes[key])
 
-        self.curr_path_cost += graph.delta(self.curr_path_vec[-1], self.curr_path_vec[0])
-        # use 2-opt heuristic to optimize local solution
-        self.opt_heuristic()
-
-        self.path_cost = self.curr_path_cost
-        logger.debug('Ant {} : {}'.format(str(self.id), self.curr_path_vec))
-        logger.debug('cost : {}'.format(self.curr_path_cost))
+        self.update_optimum_routes()
 
         self.colony.update(self)
 
         # update global colony
         logger.debug('===========Ant {} terminated==========='.format(self.id))
-        #self.__init__(self.id, self.start_node, self.colony)
 
     def end(self):
         return not self.nodes_to_visit
@@ -158,7 +155,7 @@ class Ant(Thread):
         distance = self.graph.delta(self.curr_path_vec[-1], next_node) + self.graph.delta(next_node, self.curr_path_vec[0])
         if self.curr_path_cost + distance > self.curr_deliver.max_distance:
             return False
-        next_capacity = self.curr_path_capacity + self.demands[next_node] + self.demands[self.curr_path_vec[-1]]
+        next_capacity = self.curr_path_capacity + self.demands[next_node]
         # if the capacity exceeds the max capacity of the deliver return false
         # expects that the demand in that node is larger than the origin max capacity of the deliver
         if next_capacity > self.curr_deliver.max_capacity and self.demands[next_node] <= self.curr_deliver.max_capacity:
@@ -178,16 +175,63 @@ class Ant(Thread):
         self.curr_path_vec.append(new_node)
         self.path_mat[self.curr_node][new_node] = 1
         # current state of ant
-        logger.debug('Ant {} : {}'.format(str(self.id), self.curr_path_vec))
-        logger.debug('cost : {}'.format(self.curr_path_cost))
+        logger.debug('[Insert]Ant {} : {}'.format(str(self.id), self.curr_path_vec))
+        logger.debug('[Insert]cost : {}'.format(self.curr_path_cost))
         self.local_updating_rule(self.curr_node, new_node)
         self.curr_node = new_node
 
-    def update_best_path(self, path_vec, nodes_mat):
+    def find_deliver(self):
+        graph = self.graph
+        # add new route
+        if self.curr_path_vec:
+            graph.lock.acquire()
+            self.local_updating_rule(self.curr_path_vec[-1], self.curr_path_vec[0])
+            graph.lock.release()
+            self.curr_path_cost += graph.delta(self.curr_path_vec[-1], self.curr_path_vec[0])
+            self.routes[self.curr_deliver.id] = self.curr_path_vec
+            self.path_cost += self.curr_path_cost
+
+        self.curr_path_vec = []
+        self.curr_path_cost = 0
+        self.curr_path_capacity = 0
+
+        if self.end():
+            return
+
+        # find next deliver
+        self.curr_deliver = self.delivers.pop()
+        self.curr_node = self.curr_deliver.pos
+        self.curr_path_vec = []
+        self.curr_path_vec.append(self.curr_node)
+        self.curr_path_cost = 0
+        consume_demand = min(self.curr_deliver.max_capacity, self.demands[self.curr_node])
+        self.demands[self.curr_node] -= consume_demand
+        self.curr_path_capacity += consume_demand
+        if self.demands[self.curr_node] == 0:
+            self.nodes_to_visit.remove(self.curr_node)
+
+        logger.debug('[Find deliver]Ant {} : {}'.format(str(self.id), self.curr_path_vec))
+        logger.debug('[Find deliver]cost : {}'.format(self.path_cost))
+
+    def update_optimum_routes(self):
+        self.path_cost = 0
+        self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
+
+        for deliver in self.routes.keys():
+            cost = self.update_optimum_path(self.routes[deliver])
+            self.path_cost += cost
+            logger.debug("Ant {} Deliver {} : {}".format(self.id, deliver, self.routes[deliver]))
+            logger.debug("cost : {}".format(cost))
+
+    def update_optimum_path(self, path_vec):
         sum = 0
+        nodes_mat = self.graph.nodes_mat
         for i in range(0, len(path_vec) - 1):
             sum += nodes_mat[path_vec[i]][path_vec[i + 1]]
-        sum += nodes_mat[path_vec[len(path_vec) - 1]][path_vec[0]]
+            self.path_mat[path_vec[i]][path_vec[i + 1]] = 1
+        sum += nodes_mat[path_vec[-1]][path_vec[0]]
+        self.path_mat[path_vec[-1]][path_vec[0]] = 1
+        return sum
 
     def tour_length(self, path_vec, nodes_mat):
         sum = 0
@@ -197,9 +241,8 @@ class Ant(Thread):
         return sum
 
     # 2-opt heuristic
-    def opt_heuristic(self):
+    def opt_heuristic(self, path_vec):
         graph = self.graph
-        path_vec = self.curr_path_vec[:]
         l = len(path_vec)
         noChange = False
         while not noChange:
@@ -220,13 +263,8 @@ class Ant(Thread):
                     new_path_vec += path_vec[j + 1:l]
                     path_vec = new_path_vec
                     noChange = False
-        # update optimization path
-        self.curr_path_vec = path_vec
-        self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
-        self.curr_path_cost = 0
-        for i in range(0, len(path_vec) - 1):
-            self.curr_path_cost += graph.delta(path_vec[i], path_vec[i + 1])
-        self.curr_path_cost += graph.delta(path_vec[len(path_vec) - 1], path_vec[0])
+        # TODO: check the path mat
+        return path_vec
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph

@@ -24,7 +24,7 @@ class AntColony:
     def reset(self):
         self.iter_count = 0
         self.best_path_cost = float('inf')
-        self.best_path_vec = None
+        self.best_path_routes = None
         self.best_path_mat = None
         self.last_best_path_iteration = 0
 
@@ -38,8 +38,9 @@ class AntColony:
                 self.cv.wait_for(self.end)
                 self.avg_path_cost /= len(self.ants)
                 logger.info("=================Iteration {} finish=================".format(self.iter_count))
-                logger.info("Best path found in iteration {} is".format(self.iter_count))
-                logger.info("{}".format(self.best_path_vec))
+                logger.info("Best path routes in iteration {} is".format(self.iter_count))
+                for deliver in self.best_path_routes.keys():
+                    logger.info("Deliver {} : {}".format(deliver, self.best_path_routes[deliver]))
                 logger.info("cost : {}".format(self.best_path_cost))
                 self.global_updating_rule()
 
@@ -74,7 +75,7 @@ class AntColony:
 
             if ant.path_cost < self.best_path_cost:
                 self.best_path_cost = ant.path_cost
-                self.best_path_vec = ant.curr_path_vec
+                self.best_path_routes = ant.routes
                 self.best_path_mat = ant.path_mat
                 self.last_best_path_iteration = self.iter_count
                 

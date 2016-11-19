@@ -30,8 +30,8 @@ class AntGraph:
                 self.nodes_mat[i][j], self.nodes_mat[j][i] = d, d
 
         # print nodes_mat
-        for i in range(0, self.nodes_num):
-             logger.debug(self.nodes_mat[i])
+        # for i in range(0, self.nodes_num):
+        #      logger.debug(self.nodes_mat[i])
 
     def build_tau_mat(self):
         self.tau_mat = []
