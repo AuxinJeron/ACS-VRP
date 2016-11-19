@@ -39,6 +39,7 @@ class Ant(Thread):
 
         self.curr_path_vec = []
         self.curr_path_vec.append(self.start_node)
+        self.curr_path_cost = 0
 
     def kill(self):
         self.dead = True
@@ -68,12 +69,12 @@ class Ant(Thread):
         while not self.end():
             graph.lock.acquire()
             new_node = self.state_transition_rule(self.curr_node)
-            self.path_cost += graph.delta(self.curr_node, new_node)
+            self.curr_path_cost += graph.delta(self.curr_node, new_node)
             self.curr_path_vec.append(new_node)
             self.path_mat[self.curr_node][new_node] = 1
             # current state of ant
             logger.debug('Ant {} : {}'.format(str(self.id), self.curr_path_vec))
-            logger.debug('cost : {}'.format(self.path_cost))
+            logger.debug('cost : {}'.format(self.curr_path_cost))
             self.local_updating_rule(self.curr_node, new_node)
             graph.lock.release()
             self.curr_node = new_node
@@ -82,12 +83,13 @@ class Ant(Thread):
         self.local_updating_rule(self.curr_path_vec[-1], self.curr_path_vec[0])
         graph.lock.release()
 
-        self.path_cost += graph.delta(self.curr_path_vec[-1], self.curr_path_vec[0])
+        self.curr_path_cost += graph.delta(self.curr_path_vec[-1], self.curr_path_vec[0])
         # use 2-opt heuristic to optimize local solution
         self.opt_heuristic()
 
+        self.path_cost = self.curr_path_cost
         logger.debug('Ant {} : {}'.format(str(self.id), self.curr_path_vec))
-        logger.debug('cost : {}'.format(self.path_cost))
+        logger.debug('cost : {}'.format(self.curr_path_cost))
 
         self.colony.update(self)
 
@@ -202,10 +204,10 @@ class Ant(Thread):
         # update optimization path
         self.curr_path_vec = path_vec
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
-        self.path_cost = 0
+        self.curr_path_cost = 0
         for i in range(0, len(path_vec) - 1):
-            self.path_cost += graph.delta(path_vec[i], path_vec[i + 1])
-        self.path_cost += graph.delta(path_vec[len(path_vec) - 1], path_vec[0])
+            self.curr_path_cost += graph.delta(path_vec[i], path_vec[i + 1])
+        self.curr_path_cost += graph.delta(path_vec[len(path_vec) - 1], path_vec[0])
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph
