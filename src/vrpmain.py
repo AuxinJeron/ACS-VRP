@@ -34,6 +34,9 @@ def main():
     logger.info("Delivers: ")
     for i in range(0, len(tspparser.delivers)):
         logger.info(tspparser.delivers[i])
+    logger.info("Demands: ")
+    for i in range(0, len(tspparser.demands)):
+        logger.info("Node {} {}".format(i,tspparser.demands[i]))
 
     # run vrp center
     run(tspparser)

@@ -6,7 +6,7 @@ import logging
 
 KEYWORDS = {'NAME', 'COMMENT', 'TYPE', 'DIMENSION', 'EDGE_WEIGHT_TYPE',
             'CAPACITY', 'NODE_COORD_SECTION', 'DEMAND_SECTION', 'DEPOT_SECTION',
-            'LOCKER_SECTION', 'DELIVER_SECTION'}
+            'LOCKER_SECTION', 'DELIVER_SECTION', 'DEMAND_SECTION'}
 
 logger = logging.getLogger("logger")
 
@@ -24,6 +24,7 @@ class TsplibParser :
         self.cities_coord = []
         self.lockers = []
         self.delivers = []
+        self.demands = []
 
     def reset(self) :
         self.__init__()
@@ -33,6 +34,7 @@ class TsplibParser :
         node_coord_section = False
         locker_section = False
         deliver_section = False
+        demand_section = False
 
         for line in file :
             words = deque(line.split())
@@ -45,6 +47,8 @@ class TsplibParser :
                 locker_section = False
             if deliver_section and keyword in KEYWORDS:
                 deliver_section = False
+            if demand_section and keyword in KEYWORDS:
+                demand_section = False
 
             if keyword == "COMMENT":
                 self.comment = " ".join(words).strip(": ")
@@ -65,6 +69,8 @@ class TsplibParser :
                 locker_section = True
             elif keyword == "DELIVER_SECTION":
                 deliver_section = True
+            elif keyword == "DEMAND_SECTION":
+                demand_section = True
             else :
                 if node_coord_section:
                     self.scan_city_coord(line)
@@ -72,6 +78,8 @@ class TsplibParser :
                     self.scan_locker(line)
                 elif deliver_section:
                     self.scan_deliver(line)
+                elif demand_section:
+                    self.scan_demand(line)
 
     def scan_city_coord(self, line):
         words = deque(line.split(" "))
@@ -101,6 +109,12 @@ class TsplibParser :
         max_capacity = int(words[3])
         deliver = Deliver(deliver_id, pos, max_distance, max_capacity)
         self.delivers.append(deliver)
+
+    def scan_demand(self, line):
+        words = deque(line.split())
+        if len(words) != 2:
+            return
+        self.demands.append(int(words[1]))
 
     def read_file(self, file_path):
         self.file_path = path.relpath(file_path)
