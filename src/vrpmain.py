@@ -5,7 +5,7 @@ import logging
 
 # construct the logger
 logger = logging.getLogger("logger")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)s] [%(levelname)s]  %(message)s")
 consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)

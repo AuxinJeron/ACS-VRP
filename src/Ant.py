@@ -26,6 +26,8 @@ class Ant(Thread):
         self.demands = list(self.colony.demands)
 
         self.routes = {}
+        self.routes_cost = {}
+        self.routes_capacity = {}
         self.path_cost = 0
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
         self.nodes_to_visit = set()
@@ -104,9 +106,9 @@ class Ant(Thread):
         if not candidates_nodes:
             candidates_nodes = self.nodes_to_visit
 
-        logger.debug("{} Candidates node : {}".format(curr_node, candidates_nodes))
-        for i in range(0, len(self.demands)):
-            logger.debug("Demands {} : {}".format(i, self.demands[i]))
+        # logger.debug("{} Candidates node : {}".format(curr_node, candidates_nodes))
+        # for i in range(0, len(self.demands)):
+        #     logger.debug("Demands {} : {}".format(i, self.demands[i]))
 
         if q < self.Q0:
             logger.debug("Exploitation")
@@ -195,6 +197,8 @@ class Ant(Thread):
             self.local_updating_rule(self.curr_path_vec[-1].pos, self.curr_path_vec[0].pos)
             self.curr_path_cost += graph.delta(self.curr_path_vec[-1].pos, self.curr_path_vec[0].pos)
             self.routes[self.curr_deliver.id] = self.curr_path_vec
+            self.routes_cost[self.curr_deliver.id] = self.curr_path_cost
+            self.routes_capacity[self.curr_deliver.id] = self.curr_path_capacity
             self.path_cost += self.curr_path_cost
 
         self.curr_path_vec = []
@@ -217,31 +221,37 @@ class Ant(Thread):
             self.nodes_to_visit.remove(self.curr_node)
 
         logger.debug('[Find deliver]Ant {} : {}'.format(str(self.id), self.curr_deliver))
-        logger.debug('[Find deliver]Ant {} Demands'.format(self.id))
-        for i in range(0, len(self.demands)):
-            logger.debug("Demands {} : {}".format(i, self.demands[i]))
+        #logger.debug('[Find deliver]Ant {} Demands'.format(self.id))
+        # for i in range(0, len(self.demands)):
+        #     logger.debug("Demands {} : {}".format(i, self.demands[i]))
 
     def update_optimum_routes(self):
         self.path_cost = 0
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
 
         for deliver in self.routes.keys():
-            cost = self.update_optimum_path(self.routes[deliver])
+            cost, capacity = self.update_optimum_path(self.routes[deliver])
+            self.routes_capacity[deliver] = capacity
+            self.routes_cost[deliver] = cost
             self.path_cost += cost
             logger.debug("Ant {} Deliver {} : {}".format(self.id, deliver, self.routes[deliver]))
-            logger.debug("cost : {}".format(cost))
+            logger.debug("cost : {}, capacity : {}".format(cost, capacity))
 
     def update_optimum_path(self, path_vec):
-        sum = 0
+        cost = 0
+        capacity = 0
         nodes_mat = self.graph.nodes_mat
         for i in range(0, len(path_vec) - 1):
-            sum += nodes_mat[path_vec[i].pos][path_vec[i + 1].pos]
+            cost += nodes_mat[path_vec[i].pos][path_vec[i + 1].pos]
             self.path_mat[path_vec[i].pos][path_vec[i + 1].pos] = 1
-        sum += nodes_mat[path_vec[-1].pos][path_vec[0].pos]
+            capacity += path_vec[i].capacity
+        cost += nodes_mat[path_vec[-1].pos][path_vec[0].pos]
         self.path_mat[path_vec[-1].pos][path_vec[0].pos] = 1
-        return sum
+        capacity += path_vec[-1].capacity
+        return cost, capacity
 
-    def tour_length(self, path_vec, nodes_mat):
+    def tour_length(self, path_vec):
+        nodes_mat = self.graph.nodes_mat
         sum = 0
         for i in range(0, len(path_vec) - 1):
             sum += nodes_mat[path_vec[i].pos][path_vec[i + 1].pos]
@@ -274,7 +284,40 @@ class Ant(Thread):
         # TODO: check the path mat
         return path_vec
 
-    #
+    # insertion/interchange heuristic
+    def insertion_interchange(self):
+        packages = set()
+        for deliver in self.routes.keys():
+            for j in range(0, len(self.routes[deliver])):
+                packages.add((self.routes[deliver][j], deliver, j))
+
+        noChange = self.insertion_interchange_iteration(set(packages))
+
+
+    def insertion_interchange_iteration(self, packages):
+        for o in packages:
+            r_route = o[0]
+
+    def cal_insert_package(self, r_deliver, i, s_deliver):
+        graph = self.graph
+        r_route = self.routes[r_deliver]
+        s_route = self.routes[s_deliver]
+        r_route_cost = self.routes_cost[r_deliver]
+        s_route_cost = self.routes_cost[s_deliver]
+        r_route_cost = self.routes_capacity[r_deliver]
+        s_route_cost = self.routes_capacity[s_deliver]
+
+        # used in later to test whether serves the neighbours
+        s_route_nodes = set()
+        for i in range(0, len(s_route)):
+            s_route_nodes.add(s_route[i].pos)
+
+        for i in range(1, len(r_route)):
+            if not graph.cand_list[r_route.pos].intersection(s_route_nodes):
+                continue
+            c_r = r_route_cost - graph.delta(r_route[i - 1].pos, r_route[i].pos) - graph.delta(
+                r_route[i].pos - r_route[(i + 1) % len(r_route)].pos)
+        return
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph
