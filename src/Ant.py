@@ -1,5 +1,6 @@
 from math import pow
 from threading import *
+from VRPModel import Package
 import random
 import logging
 
@@ -158,7 +159,7 @@ class Ant(Thread):
         return max_node
 
     def check_feasibilty(self, next_node):
-        distance = self.graph.delta(self.curr_path_vec[-1], next_node) + self.graph.delta(next_node, self.curr_path_vec[0])
+        distance = self.graph.delta(self.curr_path_vec[-1].pos, next_node) + self.graph.delta(next_node, self.curr_path_vec[0].pos)
         if self.curr_path_cost + distance > self.curr_deliver.max_distance:
             return False
         next_capacity = self.curr_path_capacity + self.demands[next_node]
@@ -178,7 +179,7 @@ class Ant(Thread):
 
         self.curr_path_cost += graph.delta(self.curr_node, new_node)
         self.curr_path_capacity += consume_demand
-        self.curr_path_vec.append(new_node)
+        self.curr_path_vec.append(Package(new_node, consume_demand))
         self.path_mat[self.curr_node][new_node] = 1
         # current state of ant
         logger.debug('[Insert]Ant {} : {}'.format(str(self.id), self.curr_path_vec))
@@ -191,8 +192,8 @@ class Ant(Thread):
         graph = self.graph
         # add new route
         if self.curr_path_vec:
-            self.local_updating_rule(self.curr_path_vec[-1], self.curr_path_vec[0])
-            self.curr_path_cost += graph.delta(self.curr_path_vec[-1], self.curr_path_vec[0])
+            self.local_updating_rule(self.curr_path_vec[-1].pos, self.curr_path_vec[0].pos)
+            self.curr_path_cost += graph.delta(self.curr_path_vec[-1].pos, self.curr_path_vec[0].pos)
             self.routes[self.curr_deliver.id] = self.curr_path_vec
             self.path_cost += self.curr_path_cost
 
@@ -207,10 +208,10 @@ class Ant(Thread):
         self.curr_deliver = self.delivers.pop()
         self.curr_node = self.curr_deliver.pos
         self.curr_path_vec = []
-        self.curr_path_vec.append(self.curr_node)
         self.curr_path_cost = 0
         consume_demand = min(self.curr_deliver.max_capacity, self.demands[self.curr_node])
         self.demands[self.curr_node] -= consume_demand
+        self.curr_path_vec.append(Package(self.curr_node, consume_demand))
         self.curr_path_capacity += consume_demand
         if self.demands[self.curr_node] == 0 and self.curr_node in self.nodes_to_visit:
             self.nodes_to_visit.remove(self.curr_node)
@@ -234,17 +235,17 @@ class Ant(Thread):
         sum = 0
         nodes_mat = self.graph.nodes_mat
         for i in range(0, len(path_vec) - 1):
-            sum += nodes_mat[path_vec[i]][path_vec[i + 1]]
-            self.path_mat[path_vec[i]][path_vec[i + 1]] = 1
-        sum += nodes_mat[path_vec[-1]][path_vec[0]]
-        self.path_mat[path_vec[-1]][path_vec[0]] = 1
+            sum += nodes_mat[path_vec[i].pos][path_vec[i + 1].pos]
+            self.path_mat[path_vec[i].pos][path_vec[i + 1].pos] = 1
+        sum += nodes_mat[path_vec[-1].pos][path_vec[0].pos]
+        self.path_mat[path_vec[-1].pos][path_vec[0].pos] = 1
         return sum
 
     def tour_length(self, path_vec, nodes_mat):
         sum = 0
         for i in range(0, len(path_vec) - 1):
-            sum += nodes_mat[path_vec[i]][path_vec[i + 1]]
-        sum += nodes_mat[path_vec[len(path_vec) - 1]][path_vec[0]]
+            sum += nodes_mat[path_vec[i].pos][path_vec[i + 1].pos]
+        sum += nodes_mat[path_vec[-1].pos][path_vec[0].pos]
         return sum
 
     # 2-opt heuristic
@@ -258,8 +259,8 @@ class Ant(Thread):
                 diff = 0
                 diff_j = i
                 for j in range(i + 1, l):
-                    ori_val = graph.delta(path_vec[i], path_vec[i + 1]) + graph.delta(path_vec[j], path_vec[(j + 1) % l])
-                    new_val = graph.delta(path_vec[i], path_vec[j]) + graph.delta(path_vec[i + 1], path_vec[(j + 1) % l])
+                    ori_val = graph.delta(path_vec[i].pos, path_vec[i + 1].pos) + graph.delta(path_vec[j].pos, path_vec[(j + 1) % l].pos)
+                    new_val = graph.delta(path_vec[i].pos, path_vec[j].pos) + graph.delta(path_vec[i + 1].pos, path_vec[(j + 1) % l].pos)
                     if new_val - ori_val < diff:
                         diff = new_val - ori_val
                         diff_j = j
@@ -272,6 +273,8 @@ class Ant(Thread):
                     noChange = False
         # TODO: check the path mat
         return path_vec
+
+    #
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph

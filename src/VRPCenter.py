@@ -17,7 +17,7 @@ class VRPCenter:
         self.demands = tspparser.demands
 
     def start(self):
-        antColony = AntColony(self.antGraph, self.lockers, self.delivers, self.demands, 1, 250)
+        antColony = AntColony(self.antGraph, self.lockers, self.delivers, self.demands, 10, 250)
         antColony.start()
 
         best_path_routes = antColony.best_path_routes

@@ -20,3 +20,15 @@ class Deliver:
 
     def __str__(self):
         return "[{}, {}, {}, {}]".format(self.id, self.pos, self.max_distance, self.max_capacity)
+
+
+class Package:
+    def __init__(self, pos, capacity):
+        self.pos = pos
+        self.capacity = capacity
+
+    def __str__(self):
+        return "[{}, {}]".format(self.pos, self.capacity)
+
+    def __repr__(self):
+        return "[{}, {}]".format(self.pos, self.capacity)

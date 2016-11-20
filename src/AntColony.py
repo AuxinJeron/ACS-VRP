@@ -1,5 +1,6 @@
 from Ant import Ant
 from threading import Lock, Condition
+from VRPModel import *
 
 import random
 import logging
