@@ -69,12 +69,14 @@ class Ant(Thread):
             new_node = self.state_transition_rule(self.curr_node)
             if self.check_feasibilty(new_node):
                 self.insert_node(new_node)
+                self.curr_node = new_node
             else:
                 self.find_deliver()
             graph.lock.release()
-            self.curr_node = new_node
         # don't forget the last route
+        graph.lock.acquire()
         self.find_deliver()
+        graph.lock.release()
 
         # local search update
         # use 2-opt heuristic
@@ -100,6 +102,10 @@ class Ant(Thread):
         candidates_nodes = self.graph.cand_list[curr_node].intersection(self.nodes_to_visit)
         if not candidates_nodes:
             candidates_nodes = self.nodes_to_visit
+
+        logger.debug("{} Candidates node : {}".format(curr_node, candidates_nodes))
+        for i in range(0, len(self.demands)):
+            logger.debug("Demands {} : {}".format(i, self.demands[i]))
 
         if q < self.Q0:
             logger.debug("Exploitation")
@@ -177,6 +183,7 @@ class Ant(Thread):
         # current state of ant
         logger.debug('[Insert]Ant {} : {}'.format(str(self.id), self.curr_path_vec))
         logger.debug('[Insert]cost : {}'.format(self.curr_path_cost))
+        logger.debug('[Insertion]capacity : {}'.format(self.curr_path_capacity))
         self.local_updating_rule(self.curr_node, new_node)
         self.curr_node = new_node
 
@@ -184,9 +191,7 @@ class Ant(Thread):
         graph = self.graph
         # add new route
         if self.curr_path_vec:
-            graph.lock.acquire()
             self.local_updating_rule(self.curr_path_vec[-1], self.curr_path_vec[0])
-            graph.lock.release()
             self.curr_path_cost += graph.delta(self.curr_path_vec[-1], self.curr_path_vec[0])
             self.routes[self.curr_deliver.id] = self.curr_path_vec
             self.path_cost += self.curr_path_cost
@@ -207,11 +212,13 @@ class Ant(Thread):
         consume_demand = min(self.curr_deliver.max_capacity, self.demands[self.curr_node])
         self.demands[self.curr_node] -= consume_demand
         self.curr_path_capacity += consume_demand
-        if self.demands[self.curr_node] == 0:
+        if self.demands[self.curr_node] == 0 and self.curr_node in self.nodes_to_visit:
             self.nodes_to_visit.remove(self.curr_node)
 
-        logger.debug('[Find deliver]Ant {} : {}'.format(str(self.id), self.curr_path_vec))
-        logger.debug('[Find deliver]cost : {}'.format(self.path_cost))
+        logger.debug('[Find deliver]Ant {} : {}'.format(str(self.id), self.curr_deliver))
+        logger.debug('[Find deliver]Ant {} Demands'.format(self.id))
+        for i in range(0, len(self.demands)):
+            logger.debug("Demands {} : {}".format(i, self.demands[i]))
 
     def update_optimum_routes(self):
         self.path_cost = 0
