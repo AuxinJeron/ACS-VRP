@@ -298,26 +298,43 @@ class Ant(Thread):
         for o in packages:
             r_route = o[0]
 
-    def cal_insert_package(self, r_deliver, i, s_deliver):
+    def exam_insert_package(self, pack, r_deliver, r_index, s_deliver):
         graph = self.graph
+        delivers = self.colony.delivers
+
         r_route = self.routes[r_deliver]
         s_route = self.routes[s_deliver]
-        r_route_cost = self.routes_cost[r_deliver]
-        s_route_cost = self.routes_cost[s_deliver]
-        r_route_cost = self.routes_capacity[r_deliver]
-        s_route_cost = self.routes_capacity[s_deliver]
+        # r_route_cost = self.routes_cost[r_deliver]
+        # s_route_cost = self.routes_cost[s_deliver]
+        # r_route_capacity = self.routes_capacity[r_deliver]
+        s_route_capacity = self.routes_capacity[s_deliver]
 
-        # used in later to test whether serves the neighbours
         s_route_nodes = set()
         for i in range(0, len(s_route)):
             s_route_nodes.add(s_route[i].pos)
 
-        for i in range(1, len(r_route)):
-            if not graph.cand_list[r_route.pos].intersection(s_route_nodes):
-                continue
-            c_r = r_route_cost - graph.delta(r_route[i - 1].pos, r_route[i].pos) - graph.delta(
-                r_route[i].pos - r_route[(i + 1) % len(r_route)].pos)
-        return
+        # none neighbours served by target deliver
+        if not graph.cand_list[pack.pos].intersection(s_route_nodes):
+            return None
+        # exceed the max capacity of the target deliver
+        if s_route_capacity + pack.capacity > delivers[s_deliver].max_capacity:
+            return None
+
+        r_pre_index = r_index - 1
+        r_suc_index = (r_index + 1) % len(r_route)
+        strategy = None
+        decrease = 0
+        for s_index in range(0, len(s_route)):
+            s_pre_index = s_index
+            s_suc_index = (s_index + 1) % len(s_route)
+            r_cost = - graph.delta(r_route[r_pre_index].pos, pack.pos) - graph.delta(pack.pos, r_route[r_suc_index].pos)
+            s_cost = graph.delta(s_route[s_pre_index].pos, pack.pos) + graph.delta(pack.pos, s_route[s_suc_index].pos)
+            if r_cost + s_cost < decrease:
+                decrease = r_cost + s_cost
+                strategy = (pack, r_deliver, r_index, s_deliver, s_index, decrease)
+        return strategy
+
+    def exam_interchange_package(self):
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph
