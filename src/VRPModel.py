@@ -23,12 +23,14 @@ class Deliver:
 
 
 class Package:
-    def __init__(self, pos, capacity):
+    def __init__(self, pos, capacity, deliver, index):
         self.pos = pos
         self.capacity = capacity
+        self.deliver = deliver
+        self.index = index
 
     def __str__(self):
-        return "[{}, {}]".format(self.pos, self.capacity)
+        return "[{}, {}, {}, {}]".format(self.pos, self.capacity, self.deliver, self.index)
 
     def __repr__(self):
-        return "[{}, {}]".format(self.pos, self.capacity)
+        return "[{}, {}, {}, {}]".format(self.pos, self.capacity, self.deliver, self.index)

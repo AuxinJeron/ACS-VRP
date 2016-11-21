@@ -85,6 +85,7 @@ class Ant(Thread):
         # use 2-opt heuristic
         for key in self.routes.keys():
             self.routes[key] = self.opt_heuristic(self.routes[key])
+        self.update_optimum_routes()
         # insertion and interchange heuristic
         self.insertion_interchange()
 
@@ -182,12 +183,12 @@ class Ant(Thread):
 
         self.curr_path_cost += graph.delta(self.curr_node, new_node)
         self.curr_path_capacity += consume_demand
-        self.curr_path_vec.append(Package(new_node, consume_demand))
+        self.curr_path_vec.append(Package(new_node, consume_demand, self.curr_deliver.id, len(self.curr_path_vec)))
         self.path_mat[self.curr_node][new_node] = 1
         # current state of ant
         logger.debug('[Insert]Ant {} : {}'.format(str(self.id), self.curr_path_vec))
         logger.debug('[Insert]cost : {}'.format(self.curr_path_cost))
-        logger.debug('[Insertion]capacity : {}'.format(self.curr_path_capacity))
+        logger.debug('[Insert]capacity : {}'.format(self.curr_path_capacity))
         self.local_updating_rule(self.curr_node, new_node)
         self.curr_node = new_node
 
@@ -216,7 +217,7 @@ class Ant(Thread):
         self.curr_path_cost = 0
         consume_demand = min(self.curr_deliver.max_capacity, self.demands[self.curr_node])
         self.demands[self.curr_node] -= consume_demand
-        self.curr_path_vec.append(Package(self.curr_node, consume_demand))
+        self.curr_path_vec.append(Package(self.curr_node, consume_demand, self.curr_deliver.id, 0))
         self.curr_path_capacity += consume_demand
         if self.demands[self.curr_node] == 0 and self.curr_node in self.nodes_to_visit:
             self.nodes_to_visit.remove(self.curr_node)
@@ -234,7 +235,7 @@ class Ant(Thread):
             self.routes_cost[deliver], self.routes_capacity[deliver] = self.update_optimum_path(self.routes[deliver])
             self.path_cost += self.routes_cost[deliver]
             logger.debug("Ant {} Deliver {} : {}".format(self.id, deliver, self.routes[deliver]))
-            logger.debug("cost : {}, capacity : {}".format(cost, capacity))
+            logger.debug("cost : {}, capacity : {}".format(self.routes_cost[deliver], self.routes_capacity[deliver]))
 
     def update_optimum_path(self, path_vec):
         cost = 0
@@ -280,7 +281,9 @@ class Ant(Thread):
                     new_path_vec += path_vec[j + 1:l]
                     path_vec = new_path_vec
                     noChange = False
-        # TODO: check the path mat
+        # update package index
+        for i in range(0, len(path_vec)):
+            path_vec[i].index = i
         return path_vec
 
     # insertion/interchange heuristic
@@ -288,7 +291,7 @@ class Ant(Thread):
         packages = set()
         for deliver in self.routes.keys():
             for j in range(0, len(self.routes[deliver])):
-                packages.add((self.routes[deliver][j], deliver, j))
+                packages.add(self.routes[deliver][j])
 
         noChange = False
         while not noChange:
@@ -297,10 +300,11 @@ class Ant(Thread):
     def insertion_interchange_iteration(self, infos):
         noChange = True
         while infos:
-            o = infos.pop()
-            r_pack = o[0]
-            r_deliver = o[1]
-            r_index = o[2]
+            r_pack = infos.pop()
+            r_deliver = r_pack.deliver
+            r_index = r_pack.index
+            if  r_index == 0 :
+                continue
             min_d_insertion = 0
             min_d_interchange = 0
             min_s_insertion = None
@@ -327,7 +331,7 @@ class Ant(Thread):
 
     def exam_insert_package(self, pack, r_deliver, r_index, s_deliver):
         graph = self.graph
-        delivers = self.colony.delivers
+        delivers = self.colony.delivers_dict
 
         r_route = self.routes[r_deliver]
         s_route = self.routes[s_deliver]
@@ -342,15 +346,22 @@ class Ant(Thread):
 
         # none neighbours served by target deliver
         if not graph.cand_list[pack.pos].intersection(s_route_nodes):
-            return None
+            return 0, None
         # exceed the max capacity of the target deliver
         if s_route_capacity + pack.capacity > delivers[s_deliver].max_capacity:
-            return None
+            return 0, None
 
         r_pre_index = r_index - 1
         r_suc_index = (r_index + 1) % len(r_route)
         strategy = None
         decrease = 0
+
+        logger.debug("r_route : {}".format(r_route))
+        logger.debug("r_index : {}".format(r_index))
+        logger.debug("r_pre_index : {}".format(r_pre_index))
+        logger.debug("r_suc_index : {}".format(r_suc_index))
+        logger.debug("r_pack : {}".format(pack))
+
         for s_index in range(0, len(s_route)):
             s_pre_index = s_index
             s_suc_index = (s_index + 1) % len(s_route)
@@ -359,6 +370,10 @@ class Ant(Thread):
             if r_cost + s_cost < decrease:
                 decrease = r_cost + s_cost
                 strategy = (pack, r_deliver, r_index, s_deliver, s_index)
+        # if strategy != None:
+        #     logger.debug("Ant {} insertion change:".format(self.id))
+        #     logger.debug("r_pack : {}".format(pack))
+        #     logger.debug("r_deliver : {} r_index : {} s_deliver : {} s_index : {}".format(r_deliver, r_index, s_deliver, strategy[4]))
         return decrease, strategy
 
     def do_insertion_package(self, strategy):
@@ -371,6 +386,10 @@ class Ant(Thread):
 
         r_route = self.routes[r_deliver]
         s_route = self.routes[s_deliver]
+
+        logger.debug("Ant {} insertion change:".format(self.id))
+        logger.debug("r_pack : {}".format(r_pack))
+        logger.debug("r_deliver : {} r_index : {} s_deliver : {} s_index : {}".format(r_deliver, r_index, s_deliver, s_index))
 
         # update route capacity
         self.routes_capacity[r_deliver] -= r_pack.capacity
@@ -386,13 +405,29 @@ class Ant(Thread):
         self.routes_cost[r_deliver] += r_cost
         self.routes_cost[s_deliver] += s_cost
 
+        logger.debug("origin r_route : {}".format(self.routes[r_deliver]))
+        logger.debug("origin s_route : {}".format(self.routes[s_deliver]))
+
         # update the route
-        self.routes[r_deliver] = r_route[0:r_index] + r_route[r_suc_index:]
-        self.routes[s_deliver] = s_route[0:s_suc_index] + [r_pack] + s_route[s_suc_index:]
+        r_pack.deliver = s_deliver
+        self.routes[r_deliver] = r_route[0:r_index]
+        if r_suc_index != 0:
+            self.routes[r_deliver] += r_route[r_suc_index:]
+        if s_suc_index == 0:
+            self.routes[s_deliver] = s_route[:] + [r_pack]
+        else:
+            self.routes[s_deliver] = s_route[0:s_suc_index] + [r_pack] + s_route[s_suc_index:]
+        for i in range(r_index, len(self.routes[r_deliver])):
+            self.routes[r_deliver][i].index = i
+        for i in range(s_suc_index, len(self.routes[s_deliver])):
+            self.routes[s_deliver][i].index = i
+
+        logger.debug("new r_route : {}".format(self.routes[r_deliver]))
+        logger.debug("new s_route : {}".format(self.routes[s_deliver]))
 
     def exam_interchange_package(self, pack, r_deliver, r_index, s_deliver):
         graph = self.graph
-        delivers = self.colony.delivers
+        delivers = self.colony.delivers_dict
 
         r_route = self.routes[r_deliver]
         s_route = self.routes[s_deliver]
@@ -407,13 +442,20 @@ class Ant(Thread):
 
         # none neighbours served by target deliver
         if not graph.cand_list[pack.pos].intersection(s_route_nodes):
-                return None
+                return 0, None
 
         r_pack = pack
         r_pre_index = r_index - 1
         r_suc_index = (r_index + 1) % len(r_route)
         strategy = None
         decrease = 0
+
+        logger.debug("r_route : {}".format(r_route))
+        logger.debug("r_index : {}".format(r_index))
+        logger.debug("r_pre_index : {}".format(r_pre_index))
+        logger.debug("r_suc_index : {}".format(r_suc_index))
+        logger.debug("r_pack : {}".format(r_pack))
+
         for s_index in range(1, len(s_route)):
             s_pack = s_route[s_index]
             # check the capacity
@@ -430,6 +472,11 @@ class Ant(Thread):
             if r_cost + s_cost < decrease:
                 decrease = r_cost + s_cost
                 strategy = (r_pack, r_deliver, r_index, s_pack, s_deliver, s_index)
+        # if strategy != None:
+        #     logger.debug("Ant {} interchange change:".format(self.id))
+        #     logger.debug("r_pack : {}".format(r_pack))
+        #     logger.debug("s_pack : {}".format(strategy[3]))
+        #     logger.debug("r_deliver : {} r_index : {} s_deliver : {} s_index : {}".format(r_deliver, r_index, s_deliver, strategy[5]))
         return decrease, strategy
 
     def do_interchange_package(self, strategy):
@@ -443,6 +490,11 @@ class Ant(Thread):
 
         r_route = self.routes[r_deliver]
         s_route = self.routes[s_deliver]
+
+        logger.debug("Ant {} interchange change:".format(self.id))
+        logger.debug("r_pack : {}".format(r_pack))
+        logger.debug("s_pack : {}".format(s_pack))
+        logger.debug("r_deliver : {} r_index : {} s_deliver : {} s_index : {}".format(r_deliver, r_index, s_deliver, s_index))
 
         # update route capacity
         self.routes_capacity[r_deliver] += s_pack.capacity - r_pack.capacity
@@ -458,11 +510,28 @@ class Ant(Thread):
         s_cost = -graph.delta(s_route[s_pre_index].pos, s_pack.pos) - graph.delta(s_pack.pos, s_route[s_suc_index].pos)
         s_cost += graph.delta(s_route[s_pre_index].pos, r_pack.pos) + graph.delta(r_pack.pos, s_route[s_suc_index].pos)
         self.routes_cost[r_deliver] += r_cost
-        self.routes.cost[s_deliver] += s_cost
+        self.routes_cost[s_deliver] += s_cost
+
+        logger.debug("origin r_route : {}".format(self.routes[r_deliver]))
+        logger.debug("origin s_route : {}".format(self.routes[s_deliver]))
 
         # update the route
-        self.routes[r_deliver] = r_route[0:r_index] + [s_pack] + r_route[r_suc_index:]
-        self.routes[s_deliver] = s_route[0:s_index] + [r_pack] + s_route[s_suc_index:]
+        r_pack.deliver = s_deliver
+        s_pack.deliver = r_deliver
+        self.routes[r_deliver] = r_route[0:r_index] + [s_pack]
+        if r_suc_index != 0:
+            self.routes[r_deliver] += r_route[r_suc_index:len(r_route)]
+        self.routes[s_deliver] = s_route[0:s_index] + [r_pack]
+        if s_suc_index != 0:
+            self.routes[s_deliver] += s_route[s_suc_index:len(s_route)]
+        for i in range(r_index, len(self.routes[r_deliver])):
+            self.routes[r_deliver][i].index = i
+        for i in range(s_index, len(self.routes[s_deliver])):
+            self.routes[s_deliver][i].index = i
+
+
+        logger.debug("new r_route : {}".format(self.routes[r_deliver]))
+        logger.debug("new s_route : {}".format(self.routes[s_deliver]))
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph

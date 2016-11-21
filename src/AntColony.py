@@ -12,6 +12,9 @@ class AntColony:
         self.graph = graph
         self.lockers = lockers
         self.delivers = delivers
+        self.delivers_dict = {}
+        for deliver in self.delivers:
+            self.delivers_dict[deliver.id] = deliver
         self.demands = demands
         self.num_ants = num_ants
         self.num_iterations = num_iterations
