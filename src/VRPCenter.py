@@ -25,7 +25,10 @@ class VRPCenter:
         logger.info("-------------------------------------------")
         logger.info("Problem optimization result")
         logger.info("-------------------------------------------")
-        logger.info("Best path found  is")
-        for key in best_path_routes.keys():
-            logger.info("Deliver {} {}".format(key, best_path_routes[key]))
-        logger.info("cost : {}".format(best_path_cost))
+        logger.info("Best path routes found  is")
+        if best_path_routes != None:
+            for key in best_path_routes.keys():
+                logger.info("Deliver {} {}".format(key, best_path_routes[key]))
+            logger.info("cost : {}".format(best_path_cost))
+        else:
+            logger.info("Failed to path routes")

@@ -43,10 +43,13 @@ class AntColony:
                 self.avg_path_cost /= len(self.ants)
                 logger.info("=================Iteration {} finish=================".format(self.iter_count))
                 logger.info("Best path routes in iteration {} is".format(self.iter_count))
-                for deliver in self.best_path_routes.keys():
-                    logger.info("Deliver {} : {}".format(deliver, self.best_path_routes[deliver]))
-                logger.info("cost : {}".format(self.best_path_cost))
-                self.global_updating_rule()
+                if self.best_path_routes != None:
+                    for deliver in self.best_path_routes.keys():
+                        logger.info("Deliver {} : {}".format(deliver, self.best_path_routes[deliver]))
+                    logger.info("cost : {}".format(self.best_path_cost))
+                    self.global_updating_rule()
+                else:
+                    logger.info("Failed to find path routes.")
 
         # kill all ants
         for ant in self.ants:

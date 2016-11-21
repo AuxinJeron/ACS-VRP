@@ -1,10 +1,17 @@
 from math import pow
 from threading import *
 from VRPModel import Package
+from enum import Enum
 import random
 import logging
 
 logger = logging.getLogger("logger")
+
+class AntStatus(Enum):
+    suspend = 1
+    active = 2
+    succeed= 3
+    failed = 4
 
 class Ant(Thread):
     def __init__(self, ID, colony):
@@ -14,6 +21,7 @@ class Ant(Thread):
         self.colony = colony
         self.dead = False
         self.working = False
+        self.status = AntStatus.suspend
 
         self.Beta = 2.0
         self.Q0 = random.randint(45, 98) / 100.0
@@ -32,7 +40,8 @@ class Ant(Thread):
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
         self.nodes_to_visit = set()
         for i in range(0, self.graph.nodes_num):
-            self.nodes_to_visit.add(i)
+            if self.demands[i] > 0:
+                self.nodes_to_visit.add(i)
 
         self.curr_deliver = None
         self.curr_node = None
@@ -51,7 +60,9 @@ class Ant(Thread):
             with self.cv:
                 self.reset()
                 self.cv.wait_for(self.should_work)
+                self.status = AntStatus.active
                 self.run_iteration()
+                self.status = AntStatus.suspend
                 self.working = False
 
     def begin_colony(self):
@@ -81,22 +92,32 @@ class Ant(Thread):
         self.find_deliver()
         graph.lock.release()
 
-        # local search update
-        # use 2-opt heuristic
-        for key in self.routes.keys():
-            self.routes[key] = self.opt_heuristic(self.routes[key])
-        self.update_optimum_routes()
-        # insertion and interchange heuristic
-        self.insertion_interchange()
+        if self.status == AntStatus.failed:
+            # failed to find a solution
+            self.path_cost = float('inf')
+            self.colony.update(self)
+        else:
+            # succeed to find a solution
+            # local search update
+            # use 2-opt heuristic
+            for key in self.routes.keys():
+             self.routes[key] = self.opt_heuristic(self.routes[key])
+            self.update_optimum_routes()
+            # insertion and interchange heuristic
+            self.insertion_interchange()
 
-        self.update_optimum_routes()
-        self.colony.update(self)
+            self.update_optimum_routes()
+            self.colony.update(self)
 
         # update global colony
         logger.debug('===========Ant {} terminated==========='.format(self.id))
 
     def end(self):
-        return not self.nodes_to_visit
+        if not self.nodes_to_visit:
+            self.status = AntStatus.succeed
+        elif not self.delivers:
+            self.status = AntStatus.failed
+        return self.status != AntStatus.active
 
     def state_transition_rule(self, curr_node):
         graph = self.colony.graph
@@ -207,10 +228,10 @@ class Ant(Thread):
         self.curr_path_cost = 0
         self.curr_path_capacity = 0
 
-        if self.end():
+        # find next
+        if not self.delivers:
             return
 
-        # find next deliver
         self.curr_deliver = self.delivers.pop()
         self.curr_node = self.curr_deliver.pos
         self.curr_path_vec = []
@@ -294,8 +315,10 @@ class Ant(Thread):
                 packages.add(self.routes[deliver][j])
 
         noChange = False
+        self.print_result()
         while not noChange:
             noChange = self.insertion_interchange_iteration(set(packages))
+            self.print_result()
 
     def insertion_interchange_iteration(self, infos):
         noChange = True
@@ -356,17 +379,17 @@ class Ant(Thread):
         strategy = None
         decrease = 0
 
-        logger.debug("r_route : {}".format(r_route))
-        logger.debug("r_index : {}".format(r_index))
-        logger.debug("r_pre_index : {}".format(r_pre_index))
-        logger.debug("r_suc_index : {}".format(r_suc_index))
-        logger.debug("r_pack : {}".format(pack))
+        # logger.debug("r_route : {}".format(r_route))
+        # logger.debug("r_index : {}".format(r_index))
+        # logger.debug("r_pre_index : {}".format(r_pre_index))
+        # logger.debug("r_suc_index : {}".format(r_suc_index))
+        # logger.debug("r_pack : {}".format(pack))
 
         for s_index in range(0, len(s_route)):
             s_pre_index = s_index
             s_suc_index = (s_index + 1) % len(s_route)
-            r_cost = - graph.delta(r_route[r_pre_index].pos, pack.pos) - graph.delta(pack.pos, r_route[r_suc_index].pos)
-            s_cost = graph.delta(s_route[s_pre_index].pos, pack.pos) + graph.delta(pack.pos, s_route[s_suc_index].pos)
+            r_cost = - graph.delta(r_route[r_pre_index].pos, pack.pos) - graph.delta(pack.pos, r_route[r_suc_index].pos) + graph.delta(r_route[r_pre_index].pos, r_route[r_suc_index].pos)
+            s_cost = graph.delta(s_route[s_pre_index].pos, pack.pos) + graph.delta(pack.pos, s_route[s_suc_index].pos) - graph.delta(s_route[s_pre_index].pos, s_route[s_suc_index].pos)
             if r_cost + s_cost < decrease:
                 decrease = r_cost + s_cost
                 strategy = (pack, r_deliver, r_index, s_deliver, s_index)
@@ -387,9 +410,14 @@ class Ant(Thread):
         r_route = self.routes[r_deliver]
         s_route = self.routes[s_deliver]
 
-        logger.debug("Ant {} insertion change:".format(self.id))
-        logger.debug("r_pack : {}".format(r_pack))
-        logger.debug("r_deliver : {} r_index : {} s_deliver : {} s_index : {}".format(r_deliver, r_index, s_deliver, s_index))
+        # logger.debug("Ant {} insertion change:".format(self.id))
+        # logger.debug("r_pack : {}".format(r_pack))
+        # logger.debug("r_deliver : {} r_index : {} s_deliver : {} s_index : {}".format(r_deliver, r_index, s_deliver, s_index))
+        #
+        # logger.debug("origin r_route : {}".format(self.routes[r_deliver]))
+        # logger.debug("origin s_route : {}".format(self.routes[s_deliver]))
+        # logger.debug("r_route origin cost : {}".format(self.routes_cost[r_deliver]))
+        # logger.debug("s_route origin cost : {}".format(self.routes_cost[s_deliver]))
 
         # update route capacity
         self.routes_capacity[r_deliver] -= r_pack.capacity
@@ -400,13 +428,13 @@ class Ant(Thread):
         r_suc_index = (r_index + 1) % len(r_route)
         s_pre_index = s_index
         s_suc_index = (s_index + 1) % len(s_route)
-        r_cost = - graph.delta(r_route[r_pre_index].pos, r_pack.pos) - graph.delta(r_pack.pos, r_route[r_suc_index].pos)
-        s_cost = graph.delta(s_route[s_pre_index].pos, r_pack.pos) + graph.delta(r_pack.pos, s_route[s_suc_index].pos)
+        r_cost = - graph.delta(r_route[r_pre_index].pos, r_pack.pos) - graph.delta(r_pack.pos, r_route[r_suc_index].pos) + graph.delta(r_route[r_pre_index].pos, r_route[r_suc_index].pos)
+        s_cost = graph.delta(s_route[s_pre_index].pos, r_pack.pos) + graph.delta(r_pack.pos, s_route[s_suc_index].pos) - graph.delta(s_route[s_pre_index].pos, s_route[s_suc_index].pos)
         self.routes_cost[r_deliver] += r_cost
         self.routes_cost[s_deliver] += s_cost
 
-        logger.debug("origin r_route : {}".format(self.routes[r_deliver]))
-        logger.debug("origin s_route : {}".format(self.routes[s_deliver]))
+        # logger.debug("r_route wrong cost : {} r_cost : {}".format(self.routes_cost[r_deliver], r_cost))
+        # logger.debug("s_route wrong cost : {} s_cost : {}".format(self.routes_cost[s_deliver], s_cost))
 
         # update the route
         r_pack.deliver = s_deliver
@@ -422,8 +450,12 @@ class Ant(Thread):
         for i in range(s_suc_index, len(self.routes[s_deliver])):
             self.routes[s_deliver][i].index = i
 
-        logger.debug("new r_route : {}".format(self.routes[r_deliver]))
-        logger.debug("new s_route : {}".format(self.routes[s_deliver]))
+        # self.routes_cost[r_deliver] = self.tour_length(self.routes[r_deliver])
+        # self.routes_cost[s_deliver] = self.tour_length(self.routes[s_deliver])
+        # logger.debug("new r_route : {}".format(self.routes[r_deliver]))
+        # logger.debug("new s_route : {}".format(self.routes[s_deliver]))
+        # logger.debug("r_route correct cost : {}".format(self.routes_cost[r_deliver]))
+        # logger.debug("s_route correct cost : {}".format(self.routes_cost[s_deliver]))
 
     def exam_interchange_package(self, pack, r_deliver, r_index, s_deliver):
         graph = self.graph
@@ -450,11 +482,11 @@ class Ant(Thread):
         strategy = None
         decrease = 0
 
-        logger.debug("r_route : {}".format(r_route))
-        logger.debug("r_index : {}".format(r_index))
-        logger.debug("r_pre_index : {}".format(r_pre_index))
-        logger.debug("r_suc_index : {}".format(r_suc_index))
-        logger.debug("r_pack : {}".format(r_pack))
+        # logger.debug("r_route : {}".format(r_route))
+        # logger.debug("r_index : {}".format(r_index))
+        # logger.debug("r_pre_index : {}".format(r_pre_index))
+        # logger.debug("r_suc_index : {}".format(r_suc_index))
+        # logger.debug("r_pack : {}".format(r_pack))
 
         for s_index in range(1, len(s_route)):
             s_pack = s_route[s_index]
@@ -491,10 +523,15 @@ class Ant(Thread):
         r_route = self.routes[r_deliver]
         s_route = self.routes[s_deliver]
 
-        logger.debug("Ant {} interchange change:".format(self.id))
-        logger.debug("r_pack : {}".format(r_pack))
-        logger.debug("s_pack : {}".format(s_pack))
-        logger.debug("r_deliver : {} r_index : {} s_deliver : {} s_index : {}".format(r_deliver, r_index, s_deliver, s_index))
+        # logger.debug("Ant {} interchange change:".format(self.id))
+        # logger.debug("r_pack : {}".format(r_pack))
+        # logger.debug("s_pack : {}".format(s_pack))
+        # logger.debug("r_deliver : {} r_index : {} s_deliver : {} s_index : {}".format(r_deliver, r_index, s_deliver, s_index))
+        #
+        # logger.debug("origin r_route : {}".format(self.routes[r_deliver]))
+        # logger.debug("origin s_route : {}".format(self.routes[s_deliver]))
+        # logger.debug("r_route origin cost : {}".format(self.routes_cost[r_deliver]))
+        # logger.debug("s_route origin cost : {}".format(self.routes_cost[s_deliver]))
 
         # update route capacity
         self.routes_capacity[r_deliver] += s_pack.capacity - r_pack.capacity
@@ -512,8 +549,8 @@ class Ant(Thread):
         self.routes_cost[r_deliver] += r_cost
         self.routes_cost[s_deliver] += s_cost
 
-        logger.debug("origin r_route : {}".format(self.routes[r_deliver]))
-        logger.debug("origin s_route : {}".format(self.routes[s_deliver]))
+        # logger.debug("r_route wrong cost : {} r_cost : {}".format(self.routes_cost[r_deliver], r_cost))
+        # logger.debug("s_route wrong cost : {} s_cost : {}".format(self.routes_cost[s_deliver], s_cost))
 
         # update the route
         r_pack.deliver = s_deliver
@@ -529,11 +566,23 @@ class Ant(Thread):
         for i in range(s_index, len(self.routes[s_deliver])):
             self.routes[s_deliver][i].index = i
 
-
-        logger.debug("new r_route : {}".format(self.routes[r_deliver]))
-        logger.debug("new s_route : {}".format(self.routes[s_deliver]))
+        # self.routes_cost[r_deliver] = self.tour_length(self.routes[r_deliver])
+        # self.routes_cost[s_deliver] = self.tour_length(self.routes[s_deliver])
+        # logger.debug("new r_route : {}".format(self.routes[r_deliver]))
+        # logger.debug("new s_route : {}".format(self.routes[s_deliver]))
+        # logger.debug("r_route correct cost : {}".format(self.routes_cost[r_deliver]))
+        # logger.debug("s_route correct cost : {}".format(self.routes_cost[s_deliver]))
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph
         val = (1 - self.Rho) * graph.tau(curr_node, next_node) + (self.Rho * graph.tau0)
         graph.update_tau(curr_node, next_node, val)
+
+    def print_result(self):
+        logger.debug("=============solution=============")
+        cost = 0
+        for key in self.routes.keys():
+            logger.debug("route : {}".format(self.routes[key]))
+            logger.debug("cost : {} capacity : {}".format(self.routes_cost[key], self.routes_capacity[key]))
+            cost += self.routes_cost[key]
+        logger.debug("total cost : {}".format(cost))
