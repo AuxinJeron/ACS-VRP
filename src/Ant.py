@@ -85,9 +85,10 @@ class Ant(Thread):
         # use 2-opt heuristic
         for key in self.routes.keys():
             self.routes[key] = self.opt_heuristic(self.routes[key])
+        # insertion and interchange heuristic
+        self.insertion_interchange()
 
         self.update_optimum_routes()
-
         self.colony.update(self)
 
         # update global colony
@@ -230,10 +231,8 @@ class Ant(Thread):
         self.path_mat = [[0 for i in range(0, self.graph.nodes_num)] for i in range(0, self.graph.nodes_num)]
 
         for deliver in self.routes.keys():
-            cost, capacity = self.update_optimum_path(self.routes[deliver])
-            self.routes_capacity[deliver] = capacity
-            self.routes_cost[deliver] = cost
-            self.path_cost += cost
+            self.routes_cost[deliver], self.routes_capacity[deliver] = self.update_optimum_path(self.routes[deliver])
+            self.path_cost += self.routes_cost[deliver]
             logger.debug("Ant {} Deliver {} : {}".format(self.id, deliver, self.routes[deliver]))
             logger.debug("cost : {}, capacity : {}".format(cost, capacity))
 
@@ -291,12 +290,40 @@ class Ant(Thread):
             for j in range(0, len(self.routes[deliver])):
                 packages.add((self.routes[deliver][j], deliver, j))
 
-        noChange = self.insertion_interchange_iteration(set(packages))
+        noChange = False
+        while not noChange:
+            noChange = self.insertion_interchange_iteration(set(packages))
 
-
-    def insertion_interchange_iteration(self, packages):
-        for o in packages:
-            r_route = o[0]
+    def insertion_interchange_iteration(self, infos):
+        noChange = True
+        while infos:
+            o = infos.pop()
+            r_pack = o[0]
+            r_deliver = o[1]
+            r_index = o[2]
+            min_d_insertion = 0
+            min_d_interchange = 0
+            min_s_insertion = None
+            min_s_interchange = None
+            for s_deliver in self.routes.keys():
+                if r_deliver == s_deliver:
+                    continue
+                d_insertion, s_insertion = self.exam_insert_package(r_pack, r_deliver, r_index, s_deliver)
+                d_interchange, s_interchange = self.exam_interchange_package(r_pack, r_deliver, r_index, s_deliver)
+                if d_insertion < min_d_insertion:
+                    min_d_insertion = d_insertion
+                    min_s_insertion = s_insertion
+                if d_interchange < min_d_interchange:
+                    min_d_interchange = d_interchange
+                    min_s_interchange = s_interchange
+            if min_d_insertion >= 0 and min_d_interchange >= 0:
+                continue
+            noChange = False
+            if min_d_insertion < min_d_interchange:
+                self.do_insertion_package(min_s_insertion)
+            else:
+                self.do_interchange_package(min_s_interchange)
+        return noChange
 
     def exam_insert_package(self, pack, r_deliver, r_index, s_deliver):
         graph = self.graph
@@ -331,10 +358,111 @@ class Ant(Thread):
             s_cost = graph.delta(s_route[s_pre_index].pos, pack.pos) + graph.delta(pack.pos, s_route[s_suc_index].pos)
             if r_cost + s_cost < decrease:
                 decrease = r_cost + s_cost
-                strategy = (pack, r_deliver, r_index, s_deliver, s_index, decrease)
-        return strategy
+                strategy = (pack, r_deliver, r_index, s_deliver, s_index)
+        return decrease, strategy
 
-    def exam_interchange_package(self):
+    def do_insertion_package(self, strategy):
+        graph = self.graph
+        r_pack = strategy[0]
+        r_deliver = strategy[1]
+        r_index = strategy[2]
+        s_deliver = strategy[3]
+        s_index = strategy[4]
+
+        r_route = self.routes[r_deliver]
+        s_route = self.routes[s_deliver]
+
+        # update route capacity
+        self.routes_capacity[r_deliver] -= r_pack.capacity
+        self.routes_capacity[s_deliver] += r_pack.capacity
+
+        # update route cost
+        r_pre_index = r_index - 1
+        r_suc_index = (r_index + 1) % len(r_route)
+        s_pre_index = s_index
+        s_suc_index = (s_index + 1) % len(s_route)
+        r_cost = - graph.delta(r_route[r_pre_index].pos, r_pack.pos) - graph.delta(r_pack.pos, r_route[r_suc_index].pos)
+        s_cost = graph.delta(s_route[s_pre_index].pos, r_pack.pos) + graph.delta(r_pack.pos, s_route[s_suc_index].pos)
+        self.routes_cost[r_deliver] += r_cost
+        self.routes_cost[s_deliver] += s_cost
+
+        # update the route
+        self.routes[r_deliver] = r_route[0:r_index] + r_route[r_suc_index:]
+        self.routes[s_deliver] = s_route[0:s_suc_index] + [r_pack] + s_route[s_suc_index:]
+
+    def exam_interchange_package(self, pack, r_deliver, r_index, s_deliver):
+        graph = self.graph
+        delivers = self.colony.delivers
+
+        r_route = self.routes[r_deliver]
+        s_route = self.routes[s_deliver]
+        # r_route_cost = self.routes_cost[r_deliver]
+        # s_route_cost = self.routes_cost[s_deliver]
+        r_route_capacity = self.routes_capacity[r_deliver]
+        s_route_capacity = self.routes_capacity[s_deliver]
+
+        s_route_nodes = set()
+        for i in range(0, len(s_route)):
+            s_route_nodes.add(s_route[i].pos)
+
+        # none neighbours served by target deliver
+        if not graph.cand_list[pack.pos].intersection(s_route_nodes):
+                return None
+
+        r_pack = pack
+        r_pre_index = r_index - 1
+        r_suc_index = (r_index + 1) % len(r_route)
+        strategy = None
+        decrease = 0
+        for s_index in range(1, len(s_route)):
+            s_pack = s_route[s_index]
+            # check the capacity
+            if r_route_capacity - r_pack.capacity + s_pack.capacity > delivers[r_deliver].max_capacity:
+                continue
+            if s_route_capacity - s_pack.capacity + r_pack.capacity > delivers[s_deliver].max_capacity:
+                continue
+            s_pre_index = s_index - 1
+            s_suc_index = (s_index + 1) % len(s_route)
+            r_cost = -graph.delta(r_route[r_pre_index].pos, r_pack.pos) - graph.delta(r_pack.pos, r_route[r_suc_index].pos)
+            r_cost += graph.delta(r_route[r_pre_index].pos, s_pack.pos) + graph.delta(s_pack.pos, r_route[r_suc_index].pos)
+            s_cost = -graph.delta(s_route[s_pre_index].pos, s_pack.pos) - graph.delta(s_pack.pos, s_route[s_suc_index].pos)
+            s_cost += graph.delta(s_route[s_pre_index].pos, r_pack.pos) + graph.delta(r_pack.pos, s_route[s_suc_index].pos)
+            if r_cost + s_cost < decrease:
+                decrease = r_cost + s_cost
+                strategy = (r_pack, r_deliver, r_index, s_pack, s_deliver, s_index)
+        return decrease, strategy
+
+    def do_interchange_package(self, strategy):
+        graph = self.graph
+        r_pack = strategy[0]
+        r_deliver = strategy[1]
+        r_index = strategy[2]
+        s_pack = strategy[3]
+        s_deliver = strategy[4]
+        s_index = strategy[5]
+
+        r_route = self.routes[r_deliver]
+        s_route = self.routes[s_deliver]
+
+        # update route capacity
+        self.routes_capacity[r_deliver] += s_pack.capacity - r_pack.capacity
+        self.routes_capacity[s_deliver] += r_pack.capacity - s_pack.capacity
+
+        # update route cost
+        r_pre_index = r_index - 1
+        r_suc_index = (r_index + 1) % len(r_route)
+        s_pre_index = s_index - 1
+        s_suc_index = (s_index + 1) % len(s_route)
+        r_cost = -graph.delta(r_route[r_pre_index].pos, r_pack.pos) - graph.delta(r_pack.pos, r_route[r_suc_index].pos)
+        r_cost += graph.delta(r_route[r_pre_index].pos, s_pack.pos) + graph.delta(s_pack.pos, r_route[r_suc_index].pos)
+        s_cost = -graph.delta(s_route[s_pre_index].pos, s_pack.pos) - graph.delta(s_pack.pos, s_route[s_suc_index].pos)
+        s_cost += graph.delta(s_route[s_pre_index].pos, r_pack.pos) + graph.delta(r_pack.pos, s_route[s_suc_index].pos)
+        self.routes_cost[r_deliver] += r_cost
+        self.routes.cost[s_deliver] += s_cost
+
+        # update the route
+        self.routes[r_deliver] = r_route[0:r_index] + [s_pack] + r_route[r_suc_index:]
+        self.routes[s_deliver] = s_route[0:s_index] + [r_pack] + s_route[s_suc_index:]
 
     def local_updating_rule(self, curr_node, next_node):
         graph = self.colony.graph
