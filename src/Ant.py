@@ -228,11 +228,14 @@ class Ant(Thread):
         self.curr_path_cost = 0
         self.curr_path_capacity = 0
 
-        # find next
-        if not self.delivers:
+        self.curr_deliver = None
+        while self.curr_deliver == None and self.delivers:
+            new_deliver = self.delivers.pop()
+            if self.check_deliver_feasibility(new_deliver):
+                self.curr_deliver = new_deliver
+        if self.curr_deliver == None:
             return
 
-        self.curr_deliver = self.delivers.pop()
         self.curr_node = self.curr_deliver.pos
         self.curr_path_vec = []
         self.curr_path_cost = 0
@@ -244,9 +247,24 @@ class Ant(Thread):
             self.nodes_to_visit.remove(self.curr_node)
 
         logger.debug('[Find deliver]Ant {} : {}'.format(str(self.id), self.curr_deliver))
+
+        # go to the locker
+        locker = self.colony.deliver_locker(self.curr_deliver)
+        self.curr_node = locker.pos
+        self.curr_path_vec.append(Package(self.curr_node, 0, self.curr_deliver.id, 1))
+        self.demands[locker.pos] = 0
+        if self.curr_node in self.nodes_to_visit:
+            self.nodes_to_visit.remove(self.curr_node)
         #logger.debug('[Find deliver]Ant {} Demands'.format(self.id))
         # for i in range(0, len(self.demands)):
         #     logger.debug("Demands {} : {}".format(i, self.demands[i]))
+
+    def check_deliver_feasibility(self, deliver):
+        graph = self.graph
+        locker = self.colony.deliver_locker(deliver)
+        if graph.delta(deliver.pos, locker.pos) + graph.delta(locker.pos, deliver.pos) > deliver.max_distance:
+            return False
+        return True
 
     def update_optimum_routes(self):
         self.path_cost = 0
@@ -286,7 +304,7 @@ class Ant(Thread):
         noChange = False
         while not noChange:
             noChange = True
-            for i in range(0, l - 1):
+            for i in range(1, l - 1):
                 diff = 0
                 diff_j = i
                 for j in range(i + 1, l):
@@ -326,7 +344,7 @@ class Ant(Thread):
             r_pack = infos.pop()
             r_deliver = r_pack.deliver
             r_index = r_pack.index
-            if  r_index == 0 :
+            if  r_index == 0 or r_index == 1:
                 continue
             min_d_insertion = 0
             min_d_interchange = 0
@@ -385,7 +403,7 @@ class Ant(Thread):
         # logger.debug("r_suc_index : {}".format(r_suc_index))
         # logger.debug("r_pack : {}".format(pack))
 
-        for s_index in range(0, len(s_route)):
+        for s_index in range(1, len(s_route)):
             s_pre_index = s_index
             s_suc_index = (s_index + 1) % len(s_route)
             r_cost = - graph.delta(r_route[r_pre_index].pos, pack.pos) - graph.delta(pack.pos, r_route[r_suc_index].pos) + graph.delta(r_route[r_pre_index].pos, r_route[r_suc_index].pos)
@@ -488,7 +506,7 @@ class Ant(Thread):
         # logger.debug("r_suc_index : {}".format(r_suc_index))
         # logger.debug("r_pack : {}".format(r_pack))
 
-        for s_index in range(1, len(s_route)):
+        for s_index in range(2, len(s_route)):
             s_pack = s_route[s_index]
             # check the capacity
             if r_route_capacity - r_pack.capacity + s_pack.capacity > delivers[r_deliver].max_capacity:

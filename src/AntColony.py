@@ -109,3 +109,9 @@ class AntColony:
 
         self.graph.lock.release()
 
+    def deliver_locker(self, deliver_id):
+        deliver = self.delivers_dict[deliver_id]
+        return self.deliver_locker(deliver)
+
+    def deliver_locker(self, deliver):
+        return self.lockers_dict[deliver.locker_id]

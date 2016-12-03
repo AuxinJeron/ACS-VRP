@@ -105,8 +105,10 @@ class TsplibParser :
             return
         deliver_id = int(words[0])
         pos = int(words[1]) - 1
-        max_distance = int(words[2])
-        max_capacity = int(words[3])
+        #max_distance = int(words[2])
+        max_distance = float('inf')
+        #max_capacity = int(words[3])
+        max_capacity = float('inf')
         deliver = Deliver(deliver_id, pos, max_distance, max_capacity)
         self.delivers.append(deliver)
 
