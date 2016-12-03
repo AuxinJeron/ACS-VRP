@@ -31,7 +31,7 @@ class VRPCenter:
             locker.delivers.append(deliver.id)
 
     def start(self):
-        antColony = AntColony(self.antGraph, self.lockers, self.delivers, self.demands, 10, 250)
+        antColony = AntColony(self.antGraph, self.lockers, self.lockers_dict, self.delivers, self.delivers_dict, self.demands, 10, 250)
         antColony.start()
 
         best_path_routes = antColony.best_path_routes

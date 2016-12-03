@@ -8,13 +8,12 @@ import logging
 logger = logging.getLogger("logger")
 
 class AntColony:
-    def __init__(self, graph, lockers, delivers, demands, num_ants, num_iterations):
+    def __init__(self, graph, lockers, lockers_dict, delivers, delivers_dict, demands, num_ants, num_iterations):
         self.graph = graph
         self.lockers = lockers
+        self.lockers_dict = lockers_dict
         self.delivers = delivers
-        self.delivers_dict = {}
-        for deliver in self.delivers:
-            self.delivers_dict[deliver.id] = deliver
+        self.delivers_dict = delivers_dict
         self.demands = demands
         self.num_ants = num_ants
         self.num_iterations = num_iterations
