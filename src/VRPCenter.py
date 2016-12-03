@@ -13,8 +13,22 @@ class VRPCenter:
     def build_graph(self, tspparser):
         self.antGraph = AntGraph(tspparser.cities_coord)
         self.lockers = tspparser.lockers
+        self.lockers_dict = {}
+        self.delivers_dict = {}
+        for locker in self.lockers:
+            self.lockers_dict[locker.id] = locker
         self.delivers = tspparser.delivers
+        for deliver in self.delivers:
+            self.delivers_dict[deliver.id] = deliver
         self.demands = tspparser.demands
+
+        self.build_nearest_locker()
+
+    def build_nearest_locker(self):
+        for deliver in self.delivers:
+            deliver.locker_id = deliver.nearest_locker(self.lockers, self.antGraph.nodes_mat)
+            locker = self.lockers_dict[deliver.locker_id]
+            locker.delivers.append(deliver.id)
 
     def start(self):
         antColony = AntColony(self.antGraph, self.lockers, self.delivers, self.demands, 10, 250)

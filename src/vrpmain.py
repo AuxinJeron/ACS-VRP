@@ -13,18 +13,6 @@ logger.addHandler(consoleHandler)
 
 def run(tspparser):
     center = VRPCenter(tspparser)
-    center.start()
-
-def main():
-    args = argparser.parse_args()
-    tspparser.read_file(args.tsp_file[0])
-
-    logger.info("-------------------------------------------")
-    logger.info("Problem formulation information")
-    logger.info("-------------------------------------------")
-    logger.info("Name: " + tspparser.name)
-    logger.info("Comment: " + tspparser.comment)
-    logger.info("Type: " + tspparser.type)
     logger.info("Nodes: ")
     for i in range(1, len(tspparser.cities_coord)):
         logger.info("Node " + str(i) + " coordinate is " + str(tspparser.cities_coord[i][0]) + ", " + str(tspparser.cities_coord[i][1]))
@@ -38,6 +26,18 @@ def main():
     for i in range(0, len(tspparser.demands)):
         logger.info("Node {} {}".format(i, tspparser.demands[i]))
 
+    center.start()
+
+def main():
+    args = argparser.parse_args()
+    tspparser.read_file(args.tsp_file[0])
+
+    logger.info("-------------------------------------------")
+    logger.info("Problem formulation information")
+    logger.info("-------------------------------------------")
+    logger.info("Name: " + tspparser.name)
+    logger.info("Comment: " + tspparser.comment)
+    logger.info("Type: " + tspparser.type)
     # run vrp center
     run(tspparser)
 

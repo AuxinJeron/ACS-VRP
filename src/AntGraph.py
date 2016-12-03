@@ -12,7 +12,6 @@ class AntGraph:
         self.lock = Lock()
 
         self.build_nodes_mat(coord_mat)
-
         self.build_cand_list()
 
         if tau_mat is None:
