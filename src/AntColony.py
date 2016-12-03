@@ -15,6 +15,7 @@ class AntColony:
         self.delivers = delivers
         self.delivers_dict = delivers_dict
         self.demands = demands
+        self.ignore_locker_demand()
         self.num_ants = num_ants
         self.num_iterations = num_iterations
         self.Alpha = 0.1
@@ -56,6 +57,10 @@ class AntColony:
 
     def end(self):
         return self.finish_ant_count == len(self.ants)
+
+    def ignore_locker_demand(self):
+        for locker in self.lockers:
+            self.demands[locker.pos] = 0
 
     def create_ants(self):
         self.ants = []

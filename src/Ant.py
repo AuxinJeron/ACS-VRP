@@ -107,6 +107,10 @@ class Ant(Thread):
             self.insertion_interchange()
 
             self.update_optimum_routes()
+            # compress path
+            for deliver in self.routes:
+                path = self.routes[deliver]
+                self.routes[deliver] = self.compress_path(path)
             self.colony.update(self)
 
         # update global colony
@@ -288,6 +292,19 @@ class Ant(Thread):
         self.path_mat[path_vec[-1].pos][path_vec[0].pos] = 1
         capacity += path_vec[-1].capacity
         return cost, capacity
+
+    def compress_path(self, path_vec):
+        new_path_vec = [path_vec[0]]
+        for i in range(1, len(path_vec)):
+            pack = path_vec[i]
+            if pack.pos == new_path_vec[-1].pos:
+                new_path_vec[-1].capacity += pack.capacity
+            elif i == len(path_vec) - 1 and pack.pos == new_path_vec[0].pos:
+                new_path_vec[0].capacity += pack.capacity
+            else:
+                pack.index = len(new_path_vec)
+                new_path_vec.append(pack)
+        return new_path_vec
 
     def tour_length(self, path_vec):
         nodes_mat = self.graph.nodes_mat
