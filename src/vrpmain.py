@@ -23,8 +23,11 @@ def run(tspparser):
     for i in range(0, len(tspparser.delivers)):
         logger.info(tspparser.delivers[i])
     logger.info("Demands: ")
+    demands = 0
     for i in range(0, len(tspparser.demands)):
+        demands += tspparser.demands[i]
         logger.info("Node {} {}".format(i, tspparser.demands[i]))
+    logger.info("Total demands is: {}".format(demands))
 
     center.start()
 

@@ -14,7 +14,7 @@ class AntColony:
         self.lockers_dict = lockers_dict
         self.delivers = delivers
         self.delivers_dict = delivers_dict
-        self.demands = demands
+        self.demands = list(demands)
         self.ignore_locker_demand()
         self.num_ants = num_ants
         self.num_iterations = num_iterations
@@ -46,6 +46,8 @@ class AntColony:
                 if self.best_path_routes != None:
                     for deliver in self.best_path_routes.keys():
                         logger.info("Deliver {} : {}".format(deliver, self.best_path_routes[deliver]))
+                    for locker in self.lockers:
+                        logger.info("Locker {} scheme: {}".format(locker.id, self.locker_scheme(locker, self.best_path_routes)))
                     logger.info("cost : {}".format(self.best_path_cost))
                     self.global_updating_rule()
                 else:
@@ -120,3 +122,12 @@ class AntColony:
 
     def deliver_locker(self, deliver):
         return self.lockers_dict[deliver.locker_id]
+
+    def locker_scheme(self, locker, path_routes):
+        capacity = 0
+        for deliver_id in locker.delivers:
+            if deliver_id in path_routes.keys():
+                path = path_routes[deliver_id]
+                for pack in path:
+                    capacity += pack.capacity
+        return capacity

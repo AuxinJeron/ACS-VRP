@@ -39,10 +39,23 @@ class VRPCenter:
         logger.info("-------------------------------------------")
         logger.info("Problem optimization result")
         logger.info("-------------------------------------------")
-        logger.info("Best path routes found  is")
         if best_path_routes != None:
+            logger.info("Best path routes found  is")
             for key in best_path_routes.keys():
                 logger.info("Deliver {} {}".format(key, best_path_routes[key]))
+            logger.info("Locker scheme is")
+            for locker in self.lockers:
+                logger.info("Locker {} scheme: {}".format(locker.id, self.locker_scheme(locker, best_path_routes)))
             logger.info("cost : {}".format(best_path_cost))
         else:
             logger.info("Failed to path routes")
+
+    def locker_scheme(self, locker, path_routes):
+        capacity = 0
+        for deliver_id in locker.delivers:
+            if deliver_id in path_routes.keys():
+                path = path_routes[deliver_id]
+                for pack in path:
+                    capacity += pack.capacity
+        capacity += self.demands[locker.pos]
+        return capacity

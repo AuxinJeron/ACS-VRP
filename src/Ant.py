@@ -256,7 +256,6 @@ class Ant(Thread):
         locker = self.colony.deliver_locker(self.curr_deliver)
         self.curr_node = locker.pos
         self.curr_path_vec.append(Package(self.curr_node, 0, self.curr_deliver.id, 1))
-        self.demands[locker.pos] = 0
         if self.curr_node in self.nodes_to_visit:
             self.nodes_to_visit.remove(self.curr_node)
         #logger.debug('[Find deliver]Ant {} Demands'.format(self.id))
