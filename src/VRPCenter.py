@@ -1,6 +1,6 @@
 from AntColony import AntColony
 from AntGraph import AntGraph
-from VRPModel import *
+from TspPainter import tspPainter
 import logging
 
 logger = logging.getLogger("logger")
@@ -47,8 +47,11 @@ class VRPCenter:
             for locker in self.lockers:
                 logger.info("Locker {} scheme: {}".format(locker.id, self.locker_scheme(locker, best_path_routes)))
             logger.info("cost : {}".format(best_path_cost))
+            tspPainter.drawRoutes(best_path_routes)
         else:
             logger.info("Failed to path routes")
+
+        input("Press Enter to quit...")
 
     def locker_scheme(self, locker, path_routes):
         capacity = 0

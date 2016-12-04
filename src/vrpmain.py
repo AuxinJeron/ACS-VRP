@@ -1,6 +1,7 @@
 from TsplibParser import parser as tspparser
 from ArgParser import parser as argparser
 from VRPCenter import VRPCenter
+from TspPainter import tspPainter
 import logging
 
 # construct the logger
@@ -16,9 +17,14 @@ def run(tspparser):
     logger.info("Nodes: ")
     for i in range(1, len(tspparser.cities_coord)):
         logger.info("Node " + str(i) + " coordinate is " + str(tspparser.cities_coord[i][0]) + ", " + str(tspparser.cities_coord[i][1]))
+    tspPainter.coord_mat = tspparser.cities_coord
+    tspPainter.drawMap()
+
     logger.info("Lockers: ")
     for i in range(0, len(tspparser.lockers)):
         logger.info(tspparser.lockers[i])
+    tspPainter.drawLockers(tspparser.lockers)
+
     logger.info("Delivers: ")
     for i in range(0, len(tspparser.delivers)):
         logger.info(tspparser.delivers[i])
