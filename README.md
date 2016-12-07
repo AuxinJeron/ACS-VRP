@@ -20,5 +20,5 @@ The output for each problem is the optimal delivery assignments for all the deli
 
 Below is the optimal solution for the sample data `data/eil51.graph`.
 
-![optimal_solution](/resources/optimal_sample.png =100x)
-![optimal_graph](/resources/optimal_graph.png =100x)
+![optimal_solution](/resources/optimal_sample.png)
+![optimal_graph](/resources/optimal_graph.png)
